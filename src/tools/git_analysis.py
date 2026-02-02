@@ -11,10 +11,18 @@ import time
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Union
 import logging
-from devmind_cli.config import Neo4jConfig
+
+try:
+    from config.config import Neo4jConfig
+except ImportError:
+    # Fallback for development
+    try:
+        from devmind_cli.config import Neo4jConfig
+    except ImportError:
+        Neo4jConfig = None
 
 # Configure logging
-logger = logging.getLogger("devmind_cli.git_analysis")
+logger = logging.getLogger("tools.git_analysis")
 
 try:
     from neo4j import GraphDatabase

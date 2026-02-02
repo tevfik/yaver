@@ -83,10 +83,18 @@ class MemoryManager:
         
         self.collection_name = config.qdrant.collection
         
-        self.embeddings = OllamaEmbeddings(
-            model=config.ollama.model_embedding,
-            base_url=config.ollama.base_url,
-        )
+        # Build embeddings with optional authentication
+        embedding_kwargs = {
+            "model": config.ollama.model_embedding,
+            "base_url": config.ollama.base_url,
+        }
+        
+        # Add authentication if configured
+        if config.ollama.username and config.ollama.password:
+            embedding_kwargs["auth_tuple"] = (config.ollama.username, config.ollama.password)
+            logger.info(f"🔐 Ollama embeddings with basic auth enabled")
+        
+        self.embeddings = OllamaEmbeddings(**embedding_kwargs)
         
         self.short_term_limit = config.memory.short_term_limit
         self.long_term_limit = config.memory.long_term_limit

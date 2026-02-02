@@ -89,11 +89,23 @@ class DevMindSetupWizard:
                 break
             print("❌ Please provide a valid URL (http://... or https://...)\n")
 
+        # Ask about authentication (optional)
+        print("\n🔐 Does your Ollama server require authentication?")
+        use_auth = self.input_with_default("Use basic authentication? (y/n)", "n").lower() == "y"
+        
+        config = {"OLLAMA_URL": url}
+        
+        if use_auth:
+            username = self.input_with_default("Ollama username", "")
+            password = self.input_with_default("Ollama password (will be saved in .env)", "")
+            if username and password:
+                config["OLLAMA_USERNAME"] = username
+                config["OLLAMA_PASSWORD"] = password
+                print("✅ Authentication credentials configured\n")
+
         # Try to fetch available models
         print("\n🔄 Fetching available models from Ollama...")
         models = self.fetch_ollama_models(url)
-
-        config = {"OLLAMA_URL": url}
 
         if models:
             print(f"\n✅ Found {len(models)} available models\n")

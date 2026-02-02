@@ -17,6 +17,8 @@ class OllamaConfig(BaseSettings):
     model_general: str = Field(default="llama3.2:3b-instruct-q4_K_M", validation_alias="OLLAMA_MODEL_GENERAL")
     model_code: str = Field(default="qwen2.5-coder:7b-instruct-q4_K_M", validation_alias="OLLAMA_MODEL_CODE")
     model_embedding: str = Field(default="nomic-embed-text:latest", validation_alias="OLLAMA_MODEL_EMBEDDING")
+    username: Optional[str] = Field(default=None, validation_alias="OLLAMA_USERNAME")
+    password: Optional[str] = Field(default=None, validation_alias="OLLAMA_PASSWORD")
 
 
 class ProjectConfig(BaseSettings):

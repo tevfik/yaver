@@ -283,7 +283,7 @@ except ImportError:
 # LLM Factory
 # ============================================================================
 def create_llm(model_type: str = "general", **kwargs) -> ChatOllama:
-    """Create LLM instance based on type with logging"""
+    """Create LLM instance based on type with optional authentication"""
     config = get_config_dict()
     
     # Handle both flat and nested config formats
@@ -292,11 +292,15 @@ def create_llm(model_type: str = "general", **kwargs) -> ChatOllama:
         model_general = config.get('OLLAMA_MODEL', 'mistral')
         model_code = config.get('OLLAMA_MODEL_CODER', 'mistral')
         base_url = config.get('OLLAMA_URL', 'http://localhost:11434')
+        username = config.get('OLLAMA_USERNAME')
+        password = config.get('OLLAMA_PASSWORD')
     else:
-        # Nested format (legacy)
+        # Nested format (from config.py)
         model_general = config.ollama.model_general
         model_code = config.ollama.model_code
         base_url = config.ollama.base_url
+        username = config.ollama.username
+        password = config.ollama.password
     
     model_map = {
         "general": model_general,
@@ -304,6 +308,11 @@ def create_llm(model_type: str = "general", **kwargs) -> ChatOllama:
     }
     
     model_name = model_map.get(model_type, model_general)
+    
+    # Build auth tuple if credentials provided
+    if username and password:
+        kwargs['auth_tuple'] = (username, password)
+        logger.info(f"🔐 Ollama authentication enabled for user: {username}")
     
     # Add SQL Logger Callback if available
     if HAS_SQL_LOGGING:

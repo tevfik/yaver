@@ -8,11 +8,17 @@ import sys
 import argparse
 from pathlib import Path
 
-# Add src to path
+# Ensure the package can be imported from installed location
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from config.onboarding import check_and_setup_if_needed, get_config
-from cli.docker_manager import DockerManager
+try:
+    # Try absolute imports first (for installed package)
+    from config.onboarding import check_and_setup_if_needed, get_config
+    from cli.docker_manager import DockerManager
+except ImportError:
+    # Fallback for development
+    from config.onboarding import check_and_setup_if_needed, get_config
+    from cli.docker_manager import DockerManager
 
 # Rich for beautiful terminal output
 from rich.console import Console
@@ -221,6 +227,11 @@ Examples:
     if hasattr(args, 'func'):
         try:
             args.func(args)
+        except ModuleNotFoundError as e:
+            print(f"❌ Error: Module not found: {e}")
+            print("   This may indicate an installation issue.")
+            print("   Try running: pip install -e . --upgrade")
+            sys.exit(1)
         except Exception as e:
             print(f"❌ Error: {e}")
             sys.exit(1)
@@ -362,7 +373,10 @@ def handle_analyze(args):
     print(f"   Analysis type: {args.type}\n")
     
     try:
-        from tools.git_analysis import GitRepoAnalyzer
+        try:
+            from tools.git_analysis import GitRepoAnalyzer
+        except ImportError:
+            from tools.git_analyzer import GitRepoAnalyzer
         
         analyzer = GitRepoAnalyzer(args.path)
         
@@ -376,6 +390,9 @@ def handle_analyze(args):
             print(analyzer.get_detailed_analysis())
         else:
             print(analyzer.get_overview())
+    except ImportError as ie:
+        print(f"❌ Analysis failed: Module not found - {ie}")
+        print("   Try: pip install -e . --upgrade")
     except Exception as e:
         print(f"❌ Analysis failed: {e}")
 

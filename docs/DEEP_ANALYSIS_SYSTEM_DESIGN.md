@@ -586,10 +586,10 @@ tests/
 ### 🚀 Phase 2: Relationships & Impact Analysis [Week 2]
 **Goal:** Connect the dots (Call Graphs) and calculate change risks.
 
-- [ ] **Deep Relationship Mapping**
-    - [ ] Implement `CallGraphBuilder` (Static calls).
+- [x] **Deep Relationship Mapping**
+    - [x] Implement `CallGraphBuilder` (Static calls).
     - [ ] **[TEST]** Test call graph with `tests/unit/graph/test_call_graph.py`.
-    - [ ] Implement `ImportResolver` (Map imports to actual files/modules).
+    - [x] Implement `ImportResolver` (Map imports to actual files/modules).
     - [ ] **Feature:** Circular Dependency Detection logic.
 
 - [ ] **Incremental Learning Engine**

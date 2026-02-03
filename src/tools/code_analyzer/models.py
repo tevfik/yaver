@@ -49,3 +49,6 @@ class FileAnalysis:
     loc: int = 0
     last_modified: float = 0.0
     content_hash: str = ""
+    # Phase 2 Additions
+    calls: List[Dict[str, Any]] = field(default_factory=list)  # [{'caller': 'x', 'callee': 'y', 'line': 1}]
+    resolved_imports: Dict[str, str] = field(default_factory=dict) # {'models': 'src/tools/models.py'}

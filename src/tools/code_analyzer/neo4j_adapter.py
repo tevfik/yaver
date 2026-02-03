@@ -96,6 +96,57 @@ class Neo4jAdapter:
                 func_id = f"{file_id}::{func.name}"
                 self._store_function(session, func, func_id, parent_id=file_id, rel_type="DEFINES_FUNCTION")
 
+            # 4. Store Imports (Phase 2)
+            for module_name, resolved_path in analysis.resolved_imports.items():
+                target_file_id = f"{repo_id}:{resolved_path}"
+                session.run("""
+                    MATCH (f:File {id: $file_id})
+                    MERGE (t:File {id: $target_id}) 
+                    ON CREATE SET t.path = $target_path, t.repo_id = $repo_id
+                    MERGE (f)-[:IMPORTS]->(t)
+                """, {
+                    "file_id": file_id,
+                    "target_id": target_file_id,
+                    "target_path": resolved_path,
+                    "repo_id": repo_id
+                })
+
+            # 5. Store Calls (Phase 2)
+            # Calls are tricky because we need to know the ID of the CALLEE
+            # For now, we store them as a property or generic relationship if we can guess the ID
+            # Better approach: Post-processing step to link calls after all nodes exist.
+            # Here we just store basic intra-file calls or calls where we guessed the name.
+            for call in analysis.calls:
+                # Naive linking: If we have a caller function in THIS file
+                caller_name = call['caller']
+                callee_name = call['callee']
+                
+                # Construct IDs assuming caller is in this file
+                # If caller is <module>, it's the file calling
+                if caller_name == "<module>":
+                    source_id = file_id
+                    source_label = "File"
+                elif "." in caller_name: # Method
+                     # Try to find class
+                     parts = caller_name.split(".")
+                     cls_name = parts[0]
+                     method_name = parts[1]
+                     source_id = f"{file_id}::{cls_name}::{method_name}"
+                     source_label = "Function"
+                else: 
+                     source_id = f"{file_id}::{caller_name}"
+                     source_label = "Function"
+
+                session.run(f"""
+                    MATCH (s {{id: $source_id}})
+                    MERGE (target:GhostFunction {{name: $callee_name}})
+                    MERGE (s)-[:CALLS {{line: $line}}]->(target)
+                """, {
+                    "source_id": source_id,
+                    "callee_name": callee_name,
+                    "line": call['line']
+                })
+
     def _store_function(self, session, func: FunctionInfo, func_id: str, parent_id: str, rel_type: str):
         session.run(f"""
             MERGE (fn:Function {{id: $id}})

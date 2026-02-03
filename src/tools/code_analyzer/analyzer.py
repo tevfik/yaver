@@ -5,14 +5,17 @@ Orchestrates the analysis process: Traversing directories, parsing files, cachin
 from pathlib import Path
 from typing import List, Generator
 import logging
+import ast
 from rich.progress import Progress
 
 from .ast_parser import ASTParser
 from .neo4j_adapter import Neo4jAdapter
 from .cache_manager import CachingManager
 from .models import FileAnalysis
+from .import_resolver import ImportResolver
+from .call_graph import CallGraphBuilder
 from core.analysis_session import AnalysisSession
-import config.config as cfg # Assuming global config access
+import config.config as cfg 
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +32,11 @@ class CodeAnalyzer:
         self.session = AnalysisSession(session_id)
         self.cache = CachingManager()
         self.parser = ASTParser()
+        self.import_resolver = ImportResolver(self.repo_path)
+        self.call_graph_builder = CallGraphBuilder()
         
         # Initialize Neo4j (Lazy load or config based)
-        # TODO: Load from config
-        self.neo4j_adapter = None 
+        self.neo4j_adapter = None  
 
     def connect_db(self, uri: str, auth: tuple):
         self.neo4j_adapter = Neo4jAdapter(uri, auth)
@@ -63,10 +67,32 @@ class CodeAnalyzer:
                     if not analysis:
                         # 2. Parse (Cache Miss)
                         analysis = self.parser.parse_file(file_path, self.repo_path)
+                        
+                        # Phase 2: Enrich with Calls and Imports
                         if analysis:
+                            # Parse AST for calls
+                            with open(file_path, "r", encoding="utf-8") as f:
+                                tree = ast.parse(f.read(), filename=str(file_path))
+                                analysis.calls = self.call_graph_builder.build(tree)
+                            
+                            # Resolve Imports
+                            for imp in analysis.imports:
+                                resolved = self.import_resolver.resolve_import(imp, file_path)
+                                if resolved:
+                                    imp_name = imp.module if imp.module else (imp.names[0] if imp.names else "")
+                                    if imp_name:
+                                        analysis.resolved_imports[imp_name] = str(resolved)
+
+                            self.cache.save_analysis(file_path, analysis)
+                                resolved = self.import_resolver.resolve_import(imp, file_path)
+                                if resolved:
+                                    imp_name = imp.module if imp.module else (imp.names[0] if imp.names else "")
+                                    if imp_name:
+                                        analysis.resolved_imports[imp_name] = str(resolved)
+
                             self.cache.save_analysis(file_path, analysis)
                     
-                    # 3. Store in Neo4j
+                    # 3. Store in Neo4j (Nodes + Relationships)
                     if analysis and self.neo4j_adapter:
                         self.neo4j_adapter.store_analysis(analysis, self.repo_path.name)
                         

@@ -178,15 +178,32 @@ class CodeAnalyzer:
 
         self.session.log_progress(f"Completed analysis. Processed {processed_count}/{total_files} files.")
         
-        # 5. Architecture Tagging
+        # 5. Link Cross-File Calls (Second Pass)
+        if self.neo4j_adapter:
+            self.session.log_progress("Linking cross-file call relationships...")
+            self.neo4j_adapter.link_unresolved_calls()
+        
+        # 6. Architecture Tagging
         if self.neo4j_adapter:
             self.session.log_progress("Auto-tagging architecture layers...")
             self.neo4j_adapter.auto_tag_layers(self.repo_path.name)
         
         self.session.log_finding("Analysis Complete", f"Successfully analyzed {processed_count} files.")
         
-        if self.neo4j_adapter:
-            self.neo4j_adapter.close()
+        # Log Final Stats
+        import time
+        stats = {
+            "files_processed": processed_count,
+            "total_files": total_files,
+            "error_count": total_files - processed_count,
+            "duration_seconds": 0  # To be filled by CLI or wrapper, but we can't easily measure here without start time passed in
+        }
+        # In a real implementation we would track detailed node counts from adapter
+        self.session.finalize_report(stats)
+
+        # Connection should be closed by the caller using analyzer.close()
+        # if self.neo4j_adapter:
+        #    self.neo4j_adapter.close()
             
     def _process_semantic_analysis(self, file_path: Path, analysis: FileAnalysis):
         """

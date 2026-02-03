@@ -111,3 +111,30 @@ class AnalysisSession:
     def log_error(self, error: str):
         """Log an error specifically"""
         self.log_progress(f"ERROR: {error}", step_type="ERROR")
+
+    def finalize_report(self, stats: Dict):
+        """
+        Write a final summary report to the progress file.
+        
+        Args:
+            stats: Dictionary containing analysis statistics
+        """
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        report = f"""
+## 🏁 Session Summary
+**Completed at:** {timestamp}
+
+| Metric | Value |
+|--------|-------|
+| Files Analyzed | {stats.get('files_processed', 0)} |
+| Total Files | {stats.get('total_files', 0)} |
+| Duration | {stats.get('duration_seconds', 0):.2f}s |
+| Nodes Created | {stats.get('nodes_created', 'N/A')} |
+| Relationships | {stats.get('relationships_created', 'N/A')} |
+| Errors | {stats.get('error_count', 0)} |
+
+### Status: {'✅ Success' if stats.get('error_count', 0) == 0 else '⚠️ Completed with errors'}
+"""
+        self._append_file(self.progress_file, report)
+

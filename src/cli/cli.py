@@ -603,6 +603,9 @@ def handle_analyze(args):
                            # id is like id:path/to/file::Class::method
                            simple_names = [uid.split("::")[-1] for uid in cycle]
                            console.print(f"   🔄 {' -> '.join(simple_names)}")
+                
+                # Clean up
+                analyzer.close()
 
             except Exception as e:
                 console.print(f"[bold red]❌ Analysis Failed:[/bold red] {str(e)}")

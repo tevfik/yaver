@@ -51,25 +51,46 @@ class CallGraphBuilder(ast.NodeVisitor):
         else:
             caller = self.current_function
             
-        callee_name = self._get_func_name(node.func)
+        callee_name, confidence, is_dynamic = self._get_func_name_info(node.func)
         
         if callee_name:
             self.calls.append({
                 "caller": caller,
                 "callee": callee_name,
-                "line": node.lineno
+                "line": node.lineno,
+                "confidence": confidence,
+                "is_dynamic": is_dynamic
             })
             
         self.generic_visit(node)
 
-    def _get_func_name(self, node) -> Optional[str]:
-        """Convert AST node to dotted string name"""
+    def _get_func_name_info(self, node) -> tuple[Optional[str], float, bool]:
+        """
+        Convert AST node to dotted string name, confidence score, and dynamic flag.
+        Returns: (name, confidence, is_dynamic)
+        """
         if isinstance(node, ast.Name):
-            return node.id
+            return node.id, 1.0, False
         elif isinstance(node, ast.Attribute):
             # recursive for things like os.path.join
-            value = self._get_func_name(node.value)
+            value, conf, dyn = self._get_func_name_info(node.value)
             if value:
-                return f"{value}.{node.attr}"
-            return node.attr
-        return None
+                return f"{value}.{node.attr}", conf, dyn
+            return node.attr, 1.0, False
+        
+        # Dynamic handling start
+        elif isinstance(node, ast.Call):
+            # e.g. get_handler().process() - we can't be sure what get_handler returns
+            # So we treat this as a lower confidence call if we can extract a partial name
+            name, _, _ = self._get_func_name_info(node.func)
+            if name:
+                return f"{name}(...).Result", 0.5, True
+        # Dynamic handling end
+            
+        return None, 0.0, False
+
+    def _get_func_name(self, node) -> Optional[str]:
+        # Legacy Wrapper
+        name, _, _ = self._get_func_name_info(node)
+        return name
+

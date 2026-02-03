@@ -33,14 +33,13 @@ def test_call_graph_builder():
     # other_func calls MyClass, method_b, nested_call, helper
     calls_other = find_calls("other_func")
     assert "MyClass" in calls_other
-    # MyClass().method_b() -> parsed as chain
-    # It might come out as 'MyClass().method_b' or similar depending on implementation
-    # Let's check what we got if failure persists, but based on recursive implementation:
-    # MyClass() is a Call, not Name/Attribute, so _get_func_name might return None for the base if it's complex
-    # Let's see what the builder actually produced for this line: MyClass().method_b()
-    assert "method_b" in calls_other
+    # MyClass().method_b() -> now parsed as dynamic pattern 'MyClass(...).Result.method_b'
+    # Check that we captured the call pattern
+    dynamic_calls = [c for c in calls_other if "method_b" in c]
+    assert len(dynamic_calls) > 0, f"Expected method_b call, got: {calls_other}"
     assert "nested_call" in calls_other
     assert "helper" in calls_other
+
 
 def test_nested_calls():
     code = "fn(a(b()))"

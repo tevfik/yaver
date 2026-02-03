@@ -183,6 +183,8 @@ class Neo4jAdapter:
                 # Naive linking: If we have a caller function in THIS file
                 caller_name = call['caller']
                 callee_name = call['callee']
+                confidence = call.get('confidence', 1.0)
+                is_dynamic = call.get('is_dynamic', False)
                 
                 # Construct IDs assuming caller is in this file
                 # If caller is <module>, it's the file calling
@@ -198,49 +200,47 @@ class Neo4jAdapter:
                      source_label = "Function"
                 else: 
                      source_id = f"{file_id}::{caller_name}"
-                     source_label = "Function"
 
-                # Attempt to resolve target
-                target_query_part = ""
-                params = {
-                    "source_id": source_id,
-                    "callee_name": callee_name,
-                    "line": call['line']
-                }
-
-                # Check for self calls resolving to local methods
-                processed_callee = callee_name
-                if callee_name.startswith("self.") and "." in caller_name:
-                    potential_method = callee_name.replace("self.", f"{caller_name.split('.')[0]}.")
-                    if potential_method.split(".")[-1] in [m.split(".")[-1] for m in local_methods]: 
-                        # Ideally match full class but simple split ok for now
-                         processed_callee = potential_method
+                # Store call as a relationship with properties
+                # We often can't resolve the target ID yet, so we create a 'Ghost Node' or just a property
+                # But to support visualization, let's try to link if it's local
                 
-                # If resolves to a local function (e.g. MyClass.method or my_func)
-                # We need to distinguish between class methods and top level functions
-                if processed_callee in local_methods:
+                target_id = None
+                if callee_name in local_methods:
                      # It's a method in this file
-                     cls = processed_callee.split(".")[0]
-                     met = processed_callee.split(".")[1]
-                     target_id = f"{file_id}::{cls}::{met}"
-                     params["target_id"] = target_id
-                     target_query_part = "MERGE (target:Function {id: $target_id})"
-                elif processed_callee in [f.name for f in analysis.functions]:
-                     # It's a top level function
-                     target_id = f"{file_id}::{processed_callee}"
-                     params["target_id"] = target_id
-                     target_query_part = "MERGE (target:Function {id: $target_id})"
+                     parts = callee_name.split(".")
+                     target_id = f"{file_id}::{parts[0]}::{parts[1]}"
+                
+                if target_id:
+                    session.run(f"""
+                        MATCH (s {{id: $source_id}})
+                        MATCH (t {{id: $target_id}})
+                        MERGE (s)-[r:CALLS]->(t)
+                        SET r.line = $line, r.confidence = $confidence, r.dynamic = $dynamic
+                    """, {
+                        "source_id": source_id,
+                        "target_id": target_id,
+                        "line": call['line'],
+                        "confidence": confidence,
+                        "dynamic": is_dynamic
+                    })
                 else:
-                     # External or unknown
-                     target_query_part = "MERGE (target:GhostFunction {name: $callee_name})"
+                    # Cannot resolve locally - store unresolved call info for post-processing
+                    # Store as a pipe-separated string: "callee|line|confidence|dynamic"
+                    import json
+                    call_str = json.dumps({"callee": callee_name, "line": call['line'], "confidence": confidence, "dynamic": is_dynamic})
+                    session.run("""
+                        MATCH (s {id: $source_id})
+                        SET s.unresolved_calls = COALESCE(s.unresolved_calls, []) + $call_str
+                    """, {
+                        "source_id": source_id,
+                        "call_str": call_str
+                    })
 
-                session.run(f"""
-                    MATCH (s {{id: $source_id}})
-                    {target_query_part}
-                    MERGE (s)-[:CALLS {{line: $line}}]->(target)
-                """, params)
+
 
     def _store_function(self, session, func: FunctionInfo, func_id: str, parent_id: str, rel_type: str):
+
         session.run(f"""
             MERGE (fn:Function {{id: $id}})
             SET fn.name = $name,
@@ -312,3 +312,64 @@ class Neo4jAdapter:
         with self.driver.session() as session:
             for q in queries:
                 session.run(q, {"repo_id": repo_id})
+
+    def link_unresolved_calls(self):
+        """
+        Second pass: Link CALLS relationships for cross-file calls.
+        Processes nodes that have unresolved_calls property set during initial analysis.
+        """
+        import json
+        
+        with self.driver.session() as session:
+            # Find all nodes with unresolved calls
+            result = session.run("""
+                MATCH (caller)
+                WHERE caller.unresolved_calls IS NOT NULL
+                RETURN caller.id as caller_id, caller.unresolved_calls as calls
+            """)
+            
+            for rec in result:
+                caller_id = rec["caller_id"]
+                unresolved_list = rec["calls"]  # List of JSON strings
+                
+                for call_str in unresolved_list:
+                    call_info = json.loads(call_str)
+                    callee_name = call_info["callee"]
+                    line = call_info["line"]
+                    confidence = call_info["confidence"]
+                    is_dynamic = call_info["dynamic"]
+                    
+                    # Extract simple name
+                    simple_name = callee_name.split(".")[-1]
+                    
+                    # Find matching function
+                    func_result = session.run("""
+                        MATCH (t:Function)
+                        WHERE t.name = $name OR t.id ENDS WITH ('::' + $name)
+                        RETURN t.id as target_id
+                        LIMIT 1
+                    """, {"name": simple_name})
+                    
+                    func_record = func_result.single()
+                    if func_record:
+                        target_id = func_record["target_id"]
+                        # Create the CALLS relationship
+                        session.run("""
+                            MATCH (s {id: $source_id})
+                            MATCH (t {id: $target_id})
+                            MERGE (s)-[r:CALLS]->(t)
+                            SET r.line = $line, r.confidence = $confidence, r.dynamic = $dynamic
+                        """, {
+                            "source_id": caller_id,
+                            "target_id": target_id,
+                            "line": line,
+                            "confidence": confidence,
+                            "dynamic": is_dynamic
+                        })
+            
+            # Clean up the temporary property
+            session.run("""
+                MATCH (n)
+                WHERE n.unresolved_calls IS NOT NULL
+                REMOVE n.unresolved_calls
+            """)

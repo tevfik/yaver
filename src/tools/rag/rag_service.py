@@ -136,6 +136,7 @@ class RAGService:
         try:
             intent_chain = self.intent_prompt | self.llm | StrOutputParser()
             intent_response = intent_chain.invoke({"question": question}).strip()
+            logger.info(f"Query Intent Response FULL:\n{intent_response}")
             logger.info(f"Query Intent Response: {intent_response[:100]}...")
             
             # Extract intent label from response (look for CHAT, STRUCTURE, SEMANTIC, or HYBRID)

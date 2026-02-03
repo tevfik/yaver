@@ -607,16 +607,16 @@ tests/
 
 - [ ] **Semantic Engine**
     - [x] Implement `CodeEmbedder`.
-    - [ ] **Enhancement:** Context-Aware Chunking strategy:
-        - [ ] Chunk = `Docstring` + `Signature` + `Body subset` + `Context Tags`.
-    - [ ] **[TEST]** Verify chunking logic in `tests/unit/semantic/test_chunking.py`.
+    - [x] **Enhancement:** Context-Aware Chunking strategy:
+        - [x] Chunk = `Docstring` + `Signature` + `Body subset` + `Context Tags`.
+    - [x] **[TEST]** Verify chunking logic in `tests/unit/semantic/test_chunking.py`.
 
-- [ ] **Vector Storage (Qdrant)**
+- [x] **Vector Storage (Qdrant)**
     - [x] Implement `QdrantAdapter` for `repository_code` collection.
-    - [ ] Implement "Code Clone Detection" logic (Cosine Similarity).
+    - [x] Implement "Code Clone Detection" logic (Cosine Similarity).
 
-- [ ] **Hybrid Query Engine**
-    - [ ] Create `RAGService` combining Neo4j (Structure) + Qdrant (Meaning).
+- [x] **Hybrid Query Engine**
+    - [x] Create `RAGService` combining Neo4j (Structure) + Qdrant (Meaning).
     - [ ] Implement prompts: `CONCEPT_EXPLAINER`, `SIMILAR_CODE_FINDER`.
 
 ### 🤖 Phase 4: Intelligence, Chat & Polish [Week 4]

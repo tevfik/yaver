@@ -3,7 +3,7 @@ Main Code Analyzer
 Orchestrates the analysis process: Traversing directories, parsing files, caching, and storing results.
 """
 from pathlib import Path
-from typing import List, Generator
+from typing import List, Generator, Dict
 import logging
 import ast
 from rich.progress import Progress

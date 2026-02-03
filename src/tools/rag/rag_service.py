@@ -4,6 +4,8 @@ Combines Graph retrieval (Neo4j) and Vector retrieval (Qdrant) to answer questio
 """
 
 import logging
+import os
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
@@ -42,40 +44,46 @@ class RAGService:
         # Prompts
         self._init_prompts()
 
+    def _load_prompt(self, filename: str) -> str:
+        """Load prompt from utils/prompts directory."""
+        # Assuming relative path from valid roots, or absolute.
+        # Let's try to locate the prompts key file relative to project root
+        # Ideally config should define this, but let's hardcode the utils/prompts location for now
+        # based on user request.
+        
+        # We need to find the project root.
+        # devmind/src/tools/rag/rag_service.py -> ../../../
+        current_file = Path(__file__)
+        project_root = current_file.parent.parent.parent.parent
+        prompt_path = project_root / "src/utils/prompts" / filename
+        
+        if not prompt_path.exists():
+            # Fallback for installed package structure if needed
+            # But here we are in source.
+            logger.warning(f"Prompt file not found at {prompt_path}, using empty string.")
+            return ""
+            
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            return f.read()
+
     def _init_prompts(self):
-        """Initialize LangChain prompts."""
+        """Initialize LangChain prompts from files."""
         
         # Intent Classification
-        self.intent_prompt = ChatPromptTemplate.from_template(
-            """
-            You are a query analyzer for a code analysis tool.
-            Analyze the user's question and determine the best retrieval strategy.
-            
-            Question: {question}
-            
-            Return ONLY one of the following labels:
-            - STRUCTURE: Question about class hierarchy, function calls, dependencies, files. (e.g., "What calls X?", "Show architecture")
-            - SEMANTIC: Question about meaning, logic, specific implementation details, explanation of code. (e.g., "How does authentication work?", "Find code that validates emails")
-            - HYBRID: Requires both. (e.g., "Explain the login flow and list all files involved")
-            
-            Label:
-            """
-        )
+        intent_template = self._load_prompt("rag_intent_classifier.md")
+        self.intent_prompt = ChatPromptTemplate.from_template(intent_template)
         
         # Code Explanation
-        self.qa_prompt = ChatPromptTemplate.from_template(
-            """
-            You are an expert software architect answering questions about the current codebase.
-            Use the provided Context to answer the Question.
-            
-            Context (Structure + Code):
-            {context}
-            
-            Question: {question}
-            
-            Answer concisely and cite files or functions where appropriate.
-            """
-        )
+        qa_template = self._load_prompt("rag_qa_architect.md")
+        self.qa_prompt = ChatPromptTemplate.from_template(qa_template)
+        
+        # Concept Explainer
+        concept_template = self._load_prompt("concept_explainer.md")
+        self.concept_prompt = ChatPromptTemplate.from_template(concept_template)
+        
+        # Similarity Analysis
+        similarity_template = self._load_prompt("similar_code_finder.md")
+        self.similarity_prompt = ChatPromptTemplate.from_template(similarity_template)
 
     def retrieve_context(self, question: str, strategy: str = "HYBRID") -> str:
         """

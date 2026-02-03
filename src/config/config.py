@@ -113,17 +113,19 @@ class TaskConfig(BaseSettings):
 
 class FeatureConfig(BaseSettings):
     """Advanced features toggles"""
-    enable_architecture_diagram: bool = Field(default=True, env="ENABLE_ARCHITECTURE_DIAGRAM")
-    enable_documentation_gen: bool = Field(default=True, env="ENABLE_DOCUMENTATION_GEN")
-    enable_test_generation: bool = Field(default=False, env="ENABLE_TEST_GENERATION")
-    enable_refactoring_suggestions: bool = Field(default=True, env="ENABLE_REFACTORING_SUGGESTIONS")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    enable_architecture_diagram: bool = Field(default=True, validation_alias="ENABLE_ARCHITECTURE_DIAGRAM")
+    enable_documentation_gen: bool = Field(default=True, validation_alias="ENABLE_DOCUMENTATION_GEN")
+    enable_test_generation: bool = Field(default=False, validation_alias="ENABLE_TEST_GENERATION")
+    enable_refactoring_suggestions: bool = Field(default=True, validation_alias="ENABLE_REFACTORING_SUGGESTIONS")
 
 
 class PromptsConfig(BaseSettings):
     """Configuration for Prompt files"""
-    coder_system_prompt_path: str = Field(default="devmind_cli/prompts/coder_system.md", env="PROMPT_CODER_SYSTEM_PATH")
-    reviewer_system_prompt_path: str = Field(default="devmind_cli/prompts/reviewer_system.md", env="PROMPT_REVIEWER_SYSTEM_PATH")
-    planner_system_prompt_path: str = Field(default="devmind_cli/prompts/planner_system.md", env="PROMPT_PLANNER_SYSTEM_PATH")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    coder_system_prompt_path: str = Field(default="devmind_cli/prompts/coder_system.md", validation_alias="PROMPT_CODER_SYSTEM_PATH")
+    reviewer_system_prompt_path: str = Field(default="devmind_cli/prompts/reviewer_system.md", validation_alias="PROMPT_REVIEWER_SYSTEM_PATH")
+    planner_system_prompt_path: str = Field(default="devmind_cli/prompts/planner_system.md", validation_alias="PROMPT_PLANNER_SYSTEM_PATH")
 
 
 class DevMindConfig(BaseSettings):

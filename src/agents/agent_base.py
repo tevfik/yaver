@@ -82,13 +82,24 @@ def setup_logger(name: str = "devmind") -> logging.Logger:
     config = get_config()
     
     logger = logging.getLogger(name)
-    logger.setLevel(getattr(logging, config.logging.log_level))
+    
+    # Safe config access with defaults
+    log_level = getattr(config, 'logging', None)
+    if log_level and hasattr(log_level, 'log_level'):
+        logger.setLevel(getattr(logging, log_level.log_level, logging.INFO))
+    else:
+        logger.setLevel(logging.INFO)
     
     # Clear existing handlers
     logger.handlers.clear()
     
     # Use log path from config (defaults to devmind/logs/devmind.log)
-    log_path = Path(config.logging.log_file).resolve()
+    log_file = getattr(config, 'logging', None)
+    if log_file and hasattr(log_file, 'log_file'):
+        log_path = Path(log_file.log_file).resolve()
+    else:
+        log_path = Path.home() / '.devmind' / 'logs' / 'devmind.log'
+    
     log_path.parent.mkdir(parents=True, exist_ok=True)
     
     from logging.handlers import RotatingFileHandler

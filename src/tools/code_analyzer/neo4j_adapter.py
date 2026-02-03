@@ -261,3 +261,54 @@ class Neo4jAdapter:
             "args": func.args,
             "parent_id": parent_id
         })
+
+    def auto_tag_layers(self, repo_id: str):
+        """
+        Apply architecture layer labels based on heuristics.
+        """
+        if not self.driver:
+            return
+
+        queries = [
+            # API Layer
+            """
+            MATCH (f:File) 
+            WHERE f.repo_id = $repo_id AND (
+                  f.path CONTAINS 'api/' OR 
+                  f.path CONTAINS 'server/' OR 
+                  f.path CONTAINS 'cli/' OR
+                  f.path CONTAINS 'routes/' OR
+                  f.path ENDS WITH 'main.py'
+            )
+            SET f:ApiLayer, f.layer = 'API'
+            """,
+            # Data Layer
+            """
+            MATCH (f:File) 
+            WHERE f.repo_id = $repo_id AND (
+                  f.path CONTAINS 'db/' OR 
+                  f.path CONTAINS 'models/' OR 
+                  f.path CONTAINS 'storage/' OR
+                  f.path CONTAINS 'schema/' OR
+                  f.path CONTAINS 'repository/'
+            )
+            SET f:DataLayer, f.layer = 'DATA'
+            """,
+            # Core/Business Logic Layer
+            """
+            MATCH (f:File) 
+            WHERE f.repo_id = $repo_id AND (
+                  f.path CONTAINS 'core/' OR 
+                  f.path CONTAINS 'services/' OR 
+                  f.path CONTAINS 'agents/' OR
+                  f.path CONTAINS 'tools/' OR
+                  f.path CONTAINS 'utils/'
+            )
+            AND NOT f:ApiLayer AND NOT f:DataLayer
+            SET f:CoreLayer, f.layer = 'CORE'
+            """
+        ]
+
+        with self.driver.session() as session:
+            for q in queries:
+                session.run(q, {"repo_id": repo_id})

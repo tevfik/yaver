@@ -177,6 +177,12 @@ class CodeAnalyzer:
                     logger.error(f"Error processing {file_path}: {e}")
 
         self.session.log_progress(f"Completed analysis. Processed {processed_count}/{total_files} files.")
+        
+        # 5. Architecture Tagging
+        if self.neo4j_adapter:
+            self.session.log_progress("Auto-tagging architecture layers...")
+            self.neo4j_adapter.auto_tag_layers(self.repo_path.name)
+        
         self.session.log_finding("Analysis Complete", f"Successfully analyzed {processed_count} files.")
         
         if self.neo4j_adapter:

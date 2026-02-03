@@ -128,16 +128,8 @@ def get_logger():
         _logger = setup_logger()
     return _logger
 
-# For compatibility
-logger = None
-
-def __getattr__(name):
-    """Lazy load logger on first access"""
-    global logger
-    if name == 'logger':
-        logger = get_logger()
-        return logger
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+# Initialize logger immediately
+logger = get_logger()
 
 
 # ============================================================================

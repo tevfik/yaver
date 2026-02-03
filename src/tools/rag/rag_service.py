@@ -11,7 +11,7 @@ from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-from src.config.config import OllamaConfig
+from config.config import OllamaConfig
 from tools.code_analyzer.neo4j_adapter import Neo4jAdapter
 from tools.code_analyzer.qdrant_adapter import QdrantAdapter
 from tools.code_analyzer.embeddings import CodeEmbedder
@@ -131,13 +131,22 @@ class RAGService:
         except Exception:
             intent = "HYBRID"
         
-        # 2. Retrieve
+        # Handle CHAT intent - direct LLM response without RAG
+        if "CHAT" in intent.upper():
+            try:
+                chat_response = self.llm.invoke(question)
+                return chat_response.content if hasattr(chat_response, 'content') else str(chat_response)
+            except Exception as e:
+                logger.error(f"Chat LLM invocation failed: {e}")
+                return "I'm here! How can I help you with your codebase?"
+        
+        # 2. Retrieve context for code-related queries
         context = self.retrieve_context(question, strategy=intent)
         
         if not context.strip():
             return "I couldn't find relevant information in the codebase to answer that."
             
-        # 3. Generate Answer
+        # 3. Generate Answer using RAG
         qa_chain = self.qa_prompt | self.llm | StrOutputParser()
         response = qa_chain.invoke({"context": context, "question": question})
         

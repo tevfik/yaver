@@ -12,7 +12,7 @@ import numpy as np
 from langchain_ollama import OllamaEmbeddings
 from langchain_core.embeddings import Embeddings
 
-from src.config.config import OllamaConfig
+from config.config import OllamaConfig
 
 logger = logging.getLogger(__name__)
 

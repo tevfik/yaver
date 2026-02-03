@@ -117,7 +117,10 @@ def setup_logger(name: str = "devmind") -> logging.Logger:
     logger.addHandler(file_handler)
     
     # Console handler (Rich) remains for human readability
-    if config.logging.enable_rich_logging and CONSOLE:
+    logging_config = getattr(config, 'logging', None)
+    enable_rich = getattr(logging_config, 'enable_rich_logging', True) if logging_config else True
+    
+    if enable_rich and CONSOLE:
         console_handler = RichHandler(
             console=CONSOLE,
             rich_tracebacks=True,

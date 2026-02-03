@@ -13,7 +13,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from qdrant_client.http.exceptions import UnexpectedResponse
 
-from src.config.config import QdrantConfig
+from config.config import QdrantConfig
 
 logger = logging.getLogger(__name__)
 
@@ -105,10 +105,14 @@ class QdrantAdapter:
             if not embedding:
                 continue
             
-            # Generate a deterministic ID if possible, or random
-            # Ideally use a hash of the file path + content signature
-            # For now, using uuid if 'id' not present
-            point_id = item.get('id') or str(uuid.uuid4())
+            # Generate UUID from string ID if present, or random UUID
+            # Use UUID5 for deterministic UUID generation from string IDs
+            item_id = item.get('id')
+            if item_id:
+                # Create deterministic UUID from string ID (e.g., "file.py::function")
+                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(item_id)))
+            else:
+                point_id = str(uuid.uuid4())
             
             # Separate payload from embedding
             payload = {k: v for k, v in item.items() if k not in ['embedding', 'id']}

@@ -812,8 +812,11 @@ def handle_learn(args):
                 total=None
             )
             
-            # Run analysis
-            analyzer.analyze_repository(incremental=args.incremental)
+            # Run analysis with semantic embeddings
+            analyzer.analyze_repository(
+                incremental=args.incremental,
+                use_semantic=True  # Enable embeddings for RAG
+            )
             
             duration = time.time() - start_time
             progress.update(task, description=f"✅ Analysis complete ({duration:.2f}s)")

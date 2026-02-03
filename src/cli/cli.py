@@ -180,6 +180,15 @@ Examples:
     )
     analyze_parser.add_argument('--target', help='Target function/class for impact analysis')
     analyze_parser.set_defaults(func=handle_analyze)
+
+    # Simulate command - Helper for impact analysis
+    simulate_parser = subparsers.add_parser(
+        'simulate',
+        help='simulate impact analysis'
+    )
+    simulate_parser.add_argument('file', help='File to change')
+    simulate_parser.add_argument('function', help='Function to change')
+    simulate_parser.set_defaults(func=handle_simulate)
     
     # Commit command - Generate commit message
     commit_parser = subparsers.add_parser(
@@ -689,6 +698,66 @@ def handle_analyze(args):
         print("   Try: pip install -e . --upgrade")
     except Exception as e:
         print(f"❌ Analysis failed: {e}")
+
+
+def handle_simulate(args):
+    """Handle impact simulation"""
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.tree import Tree
+    import os
+    from tools.code_analyzer.analyzer import CodeAnalyzer
+    from tools.code_analyzer.impact_analyzer import ImpactAnalyzer
+    from pathlib import Path
+    
+    console = Console()
+    console.print(f"\n🧪 [bold cyan]Simulating impact of changing:[/bold cyan] {args.function} in {args.file}\n")
+    
+    neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+    neo4j_user = os.getenv("NEO4J_USER", "neo4j")
+    neo4j_password = os.getenv("NEO4J_PASSWORD", "password")
+    
+    try:
+        # We need a CodeAnalyzer just to get the DB connection easily.
+        repo_path = Path.cwd()
+        session_id = "simulation"
+        
+        analyzer = CodeAnalyzer(session_id, repo_path)
+        analyzer.connect_db(neo4j_uri, (neo4j_user, neo4j_password))
+        
+        impact_analyzer = ImpactAnalyzer(analyzer.neo4j_adapter.driver)
+        
+        # Run analysis - search by function name
+        # TODO: Use args.file to filter more precisely if needed
+        report = impact_analyzer.analyze_function_change(args.function, change_type="signature")
+        
+        # Display Results
+        risk_color = "green"
+        if report['risk_score'] > 30: risk_color = "yellow"
+        if report['risk_score'] > 70: risk_color = "red"
+        
+        console.print(Panel(
+            f"Risk Score: [bold {risk_color}]{report['risk_score']}/100[/bold {risk_color}]\n"
+            f"Direct Dependents: {len(report['direct_callers'])}\n"
+            f"Affected Files: {len(report['affected_files'])}",
+            title="Impact Summary",
+            expand=False
+        ))
+        
+        if report['direct_callers']:
+            tree = Tree(f"[bold]Direct Callers ({len(report['direct_callers'])})[/bold]")
+            for caller in report['direct_callers']:
+                tree.add(f"[cyan]{caller['name']}[/cyan] in [dim]{caller['file']}[/dim]")
+                
+            console.print(tree)
+            
+        analyzer.neo4j_adapter.driver.close()
+        
+    except Exception as e:
+        console.print(f"[bold red]❌ Simulation Failed:[/bold red] {str(e)}")
+        import traceback
+        console.print(f"[dim]{traceback.format_exc()}[/dim]")
 
 
 def handle_visualize(args):

@@ -42,6 +42,11 @@ class CodeAnalyzer:
         self.neo4j_adapter = Neo4jAdapter(uri, auth)
         self.neo4j_adapter.init_schema()
 
+    def close(self):
+        """Close database connection"""
+        if self.neo4j_adapter:
+            self.neo4j_adapter.close()
+
     def analyze_repository(self):
         """
         Perform full analysis of the repository.
@@ -77,13 +82,6 @@ class CodeAnalyzer:
                             
                             # Resolve Imports
                             for imp in analysis.imports:
-                                resolved = self.import_resolver.resolve_import(imp, file_path)
-                                if resolved:
-                                    imp_name = imp.module if imp.module else (imp.names[0] if imp.names else "")
-                                    if imp_name:
-                                        analysis.resolved_imports[imp_name] = str(resolved)
-
-                            self.cache.save_analysis(file_path, analysis)
                                 resolved = self.import_resolver.resolve_import(imp, file_path)
                                 if resolved:
                                     imp_name = imp.module if imp.module else (imp.names[0] if imp.names else "")

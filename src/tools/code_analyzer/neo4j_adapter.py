@@ -111,6 +111,12 @@ class Neo4jAdapter:
                     "repo_id": repo_id
                 })
 
+            # Build a lookup of local methods for self-resolution
+            local_methods = set()
+            for cls in analysis.classes:
+                 for method in cls.methods:
+                      local_methods.add(f"{cls.name}.{method.name}")
+
             # 5. Store Calls (Phase 2)
             # Calls are tricky because we need to know the ID of the CALLEE
             # For now, we store them as a property or generic relationship if we can guess the ID
@@ -137,15 +143,45 @@ class Neo4jAdapter:
                      source_id = f"{file_id}::{caller_name}"
                      source_label = "Function"
 
-                session.run(f"""
-                    MATCH (s {{id: $source_id}})
-                    MERGE (target:GhostFunction {{name: $callee_name}})
-                    MERGE (s)-[:CALLS {{line: $line}}]->(target)
-                """, {
+                # Attempt to resolve target
+                target_query_part = ""
+                params = {
                     "source_id": source_id,
                     "callee_name": callee_name,
                     "line": call['line']
-                })
+                }
+
+                # Check for self calls resolving to local methods
+                processed_callee = callee_name
+                if callee_name.startswith("self.") and "." in caller_name:
+                    potential_method = callee_name.replace("self.", f"{caller_name.split('.')[0]}.")
+                    if potential_method.split(".")[-1] in [m.split(".")[-1] for m in local_methods]: 
+                        # Ideally match full class but simple split ok for now
+                         processed_callee = potential_method
+                
+                # If resolves to a local function (e.g. MyClass.method or my_func)
+                # We need to distinguish between class methods and top level functions
+                if processed_callee in local_methods:
+                     # It's a method in this file
+                     cls = processed_callee.split(".")[0]
+                     met = processed_callee.split(".")[1]
+                     target_id = f"{file_id}::{cls}::{met}"
+                     params["target_id"] = target_id
+                     target_query_part = "MERGE (target:Function {id: $target_id})"
+                elif processed_callee in [f.name for f in analysis.functions]:
+                     # It's a top level function
+                     target_id = f"{file_id}::{processed_callee}"
+                     params["target_id"] = target_id
+                     target_query_part = "MERGE (target:Function {id: $target_id})"
+                else:
+                     # External or unknown
+                     target_query_part = "MERGE (target:GhostFunction {name: $callee_name})"
+
+                session.run(f"""
+                    MATCH (s {{id: $source_id}})
+                    {target_query_part}
+                    MERGE (s)-[:CALLS {{line: $line}}]->(target)
+                """, params)
 
     def _store_function(self, session, func: FunctionInfo, func_id: str, parent_id: str, rel_type: str):
         session.run(f"""

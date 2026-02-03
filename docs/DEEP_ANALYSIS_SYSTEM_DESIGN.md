@@ -588,7 +588,7 @@ tests/
 
 - [x] **Deep Relationship Mapping**
     - [x] Implement `CallGraphBuilder` (Static calls).
-    - [ ] **[TEST]** Test call graph with `tests/unit/graph/test_call_graph.py`.
+    - [x] **[TEST]** Test call graph with `tests/unit/graph/test_call_graph.py`.
     - [x] Implement `ImportResolver` (Map imports to actual files/modules).
     - [ ] **Feature:** Circular Dependency Detection logic.
 
@@ -597,10 +597,10 @@ tests/
     - [ ] Logic: Get `git diff` -> identify changed files -> re-parse ONLY those.
     - [ ] **[TEST]** `tests/integration/test_incremental_learning.py`.
 
-- [ ] **Impact Analysis & Simulation**
-    - [ ] Implement `ImpactAnalyzer` algorithm.
+- [x] **Impact Analysis & Simulation**
+    - [x] Implement `ImpactAnalyzer` algorithm.
     - [ ] **[STATE]** Log risk findings to `findings.md`.
-    - [ ] Add `devmind simulate "change signature of X"` command.
+    - [x] Add `devmind simulate "change signature of X"` command.
 
 ### 🧠 Phase 3: Semantic Understanding & RAG [Week 3]
 **Goal:** Understand what the code *means* using Vector DB.

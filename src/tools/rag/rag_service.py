@@ -89,6 +89,7 @@ class RAGService:
         """
         Retrieve relevant context based on strategy.
         """
+        logger.info(f"retrieve_context called with strategy: {strategy}")
         context_parts = []
         
         # 1. Structural Retrieval (Neo4j)
@@ -101,7 +102,9 @@ class RAGService:
         # 2. Semantic Retrieval (Qdrant)
         if strategy in ["SEMANTIC", "HYBRID"]:
             try:
+                logger.info(f"Starting semantic search for: {question[:50]}...")
                 query_vec = self.embedder.embed_query(question)
+                logger.info(f"Query vector generated, length: {len(query_vec)}")
                 results = self.qdrant.search(query_vec, limit=5, score_threshold=0.5)  # Lowered from 0.6 to 0.5
                 
                 logger.info(f"Qdrant search returned {len(results)} results")
@@ -116,10 +119,14 @@ class RAGService:
                         text = payload.get('content', '') 
                         
                         context_parts.append(f"File: {file} | Symbol: {name}\n{text}\n")
+                else:
+                    logger.warning("No results returned from Qdrant")
             except Exception as e:
-                logger.error(f"Semantic retrieval failed: {e}")
+                logger.error(f"Semantic retrieval failed: {e}", exc_info=True)
         
-        return "\n".join(context_parts)
+        final_context = "\n".join(context_parts)
+        logger.info(f"Final context length: {len(final_context)} chars")
+        return final_context
 
     def answer(self, question: str) -> str:
         """
@@ -128,9 +135,27 @@ class RAGService:
         # 1. Determine Intent
         try:
             intent_chain = self.intent_prompt | self.llm | StrOutputParser()
-            intent = intent_chain.invoke({"question": question}).strip()
-            logger.info(f"Query Intent: {intent}")
-        except Exception:
+            intent_response = intent_chain.invoke({"question": question}).strip()
+            logger.info(f"Query Intent Response: {intent_response[:100]}...")
+            
+            # Extract intent label from response (look for CHAT, STRUCTURE, SEMANTIC, or HYBRID)
+            # Check in priority order - look for exact label matches first
+            intent = "HYBRID"  # default
+            intent_upper = intent_response.upper()
+            
+            # Look for the label that appears first in the response
+            if "CHAT:" in intent_upper or intent_upper.startswith("CHAT"):
+                intent = "CHAT"
+            elif "SEMANTIC:" in intent_upper or "SEMANTIC\n" in intent_upper or intent_upper.startswith("SEMANTIC"):
+                intent = "SEMANTIC"
+            elif "STRUCTURE:" in intent_upper or "STRUCTURE\n" in intent_upper or intent_upper.startswith("STRUCTURE"):
+                intent = "STRUCTURE"
+            elif "HYBRID:" in intent_upper or intent_upper.startswith("HYBRID"):
+                intent = "HYBRID"
+            
+            logger.info(f"Parsed Intent: {intent}")
+        except Exception as e:
+            logger.error(f"Intent classification failed: {e}")
             intent = "HYBRID"
         
         # Handle CHAT intent - direct LLM response without RAG

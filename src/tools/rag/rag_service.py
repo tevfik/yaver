@@ -102,9 +102,11 @@ class RAGService:
         if strategy in ["SEMANTIC", "HYBRID"]:
             try:
                 query_vec = self.embedder.embed_query(question)
-                results = self.qdrant.search(query_vec, limit=5, score_threshold=0.6)
+                results = self.qdrant.search(query_vec, limit=5, score_threshold=0.5)  # Lowered from 0.6 to 0.5
                 
+                logger.info(f"Qdrant search returned {len(results)} results")
                 if results:
+                    logger.debug(f"Top result score: {results[0].get('score', 0):.3f}")
                     context_parts.append("--- RELEVANT CODE SNIPPETS ---")
                     for res in results:
                         payload = res.get('payload', {})

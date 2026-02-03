@@ -150,15 +150,16 @@ class QdrantAdapter:
             raise RuntimeError("Qdrant client not connected")
 
         try:
-            search_result = self.client.search(
+            # Use query_points for newer Qdrant client API
+            search_result = self.client.query_points(
                 collection_name=self.collection_name,
-                query_vector=query_vector,
+                query=query_vector,
                 limit=limit,
                 score_threshold=score_threshold
             )
 
             results = []
-            for hit in search_result:
+            for hit in search_result.points:
                 results.append({
                     "id": hit.id,
                     "score": hit.score,

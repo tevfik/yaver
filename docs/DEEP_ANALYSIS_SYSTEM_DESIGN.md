@@ -467,6 +467,177 @@ In `docs/` folder:
 
 ---
 
+## 14. STATE MANAGEMENT & OBSERVABILITY (The "Manus" Pattern)
+
+Inspired by [planning-with-files](https://github.com/OthmanAdi/planning-with-files), we will implement a file-based state management system for long-running analysis tasks. This treats the file system as "Persistent Memory" and the LLM Context as "RAM".
+
+### The 3-File Pattern
+For every deep analysis session (e.g., `devmind analyze --deep`), the system will maintain three live Markdown files in `.devmind/sessions/<session_id>/`:
+
+#### 1. `task_plan.md` (The Strategy)
+- **Purpose**: Prevents goal drift.
+- **Content**:
+  - High-level phases (e.g., "1. Parse AST", "2. Build Graph", "3. Identify Risks").
+  - Current active step.
+  - Acceptance criteria.
+- **Mechanism**: The Agent must read this file before starting a new major step.
+
+#### 2. `findings.md` (The Knowledge)
+- **Purpose**: Persist insights without context stuffing.
+- **Content**:
+  - Discovered architecture patterns.
+  - Potential bugs or risks found.
+  - Key dependencies identified.
+- **Mechanism**: Appended to as analysis progresses. Indexed by RAG later.
+
+#### 3. `progress.md` (The Log)
+- **Purpose**: Execution history and error tracking.
+- **Content**:
+  - Chronological log of tool executions.
+  - Error logs (to avoid repeating mistakes).
+  - Test results.
+
+### Implementation Integration
+```python
+class AnalysisSession:
+    def __init__(self, session_id):
+        self.state_dir = f".devmind/sessions/{session_id}"
+        self.plan_file = self.state_dir / "task_plan.md"
+        self.findings_file = self.state_dir / "findings.md"
+        self.progress_file = self.state_dir / "progress.md"
+
+    def update_phase(self, phase_name, status="in-progress"):
+        # Updates task_plan.md checkboxes
+        pass
+    
+    def log_finding(self, finding):
+        # Appends to findings.md
+        pass
+```
+
+---
+
+## 15. DETAILED TESTING INFRASTRUCTURE
+
+To ensure robustness, we will establish a dedicated test suite reflecting the modular architecture.
+
+### Directory Structure (`tests/`)
+```
+tests/
+├── __init__.py
+├── conftest.py                 # Global fixtures (Neo4j/Qdrant mocks)
+├── data/                       # Test data assets
+│   ├── sample_python_repo/     # Real code for integration tests
+│   └── broken_syntax_repo/     # For robustness testing
+├── unit/
+│   ├── analyzer/
+│   │   ├── test_ast_parser.py
+│   │   ├── test_import_resolver.py
+│   │   └── test_complexity_metrics.py
+│   ├── graph/
+│   │   ├── test_neo4j_adapter.py
+│   │   └── test_call_graph.py
+│   └── semantic/
+│       ├── test_code_embedder.py
+│       └── test_chunking_strategy.py
+└── integration/
+    ├── test_full_analysis_flow.py
+    ├── test_incremental_learning.py
+    └── test_state_persistence.py  # Verify markdown file updates
+```
+
+### Key Test Fixtures (`conftest.py`)
+- `mock_neo4j`: Uses `neo4j-experimental` or a Docker container wrapper to prevent writing to the real DB during unit tests.
+- `mock_qdrant`: Uses Qdrant's in-memory mode.
+- `temp_repo`: Generates a temporary Python project on the fly for parsing tests.
+
+---
+
+## 16. REVISED TODO LIST (With Test & State Tasks)
+
+### ✅ Phase 1: Foundation (Code Analyzer + Structural Storage) [Week 1]
+**Goal:** Parse code, visualize structure in Neo4j, and handle caching.
+
+- [x] **Infrastructure Setup**
+    - [x] Create `src/tools/code_analyzer/` structure.
+    - [x] **[TEST]** Create `tests/` structure and `tests/data/sample_python_repo`.
+    - [x] **[STATE]** Implement `AnalysisSession` class (The 3-File Pattern manager).
+    - [x] Implement `CachingManager` (File hash → Cached AST/Result).
+    - [x] Define Neo4j Constraints & Indexes (Schema).
+
+- [x] **AST Parsing (Static Analysis)**
+    - [x] Implement `ASTParser` using Python `ast` module.
+    - [x] **[TEST]** Write `tests/unit/analyzer/test_ast_parser.py`.
+    - [x] **Optimization:** Use Generator pattern for memory-efficient directory traversal.
+    - [x] Implement `ClassExtractor` & `FunctionExtractor`.
+
+- [x] **Graph Storage (Neo4j)**
+    - [x] Implement `Neo4jAdapter` class.
+    - [x] **[TEST]** Write `tests/unit/graph/test_neo4j_adapter.py` with mock driver.
+    - [x] Implement `batch_insert_nodes()` (Files, Classes, Functions).
+    - [x] Implement `batch_insert_relationships()` (CONTAINS, DEFINES).
+    - [ ] **Feature:** Add `commit_hash` and `version` properties to all nodes.
+
+- [x] **CLI & Visualization**
+    - [x] Add `devmind analyze --deep` command.
+    - [x] **[STATE]** Ensure CLI initializes `task_plan.md` at start.
+    - [x] Add `devmind visualize <file>` (Output basic Mermaid Class Diagram).
+
+### 🚀 Phase 2: Relationships & Impact Analysis [Week 2]
+**Goal:** Connect the dots (Call Graphs) and calculate change risks.
+
+- [ ] **Deep Relationship Mapping**
+    - [ ] Implement `CallGraphBuilder` (Static calls).
+    - [ ] **[TEST]** Test call graph with `tests/unit/graph/test_call_graph.py`.
+    - [ ] Implement `ImportResolver` (Map imports to actual files/modules).
+    - [ ] **Feature:** Circular Dependency Detection logic.
+
+- [ ] **Incremental Learning Engine**
+    - [ ] Add `devmind learn --incremental` flag.
+    - [ ] Logic: Get `git diff` -> identify changed files -> re-parse ONLY those.
+    - [ ] **[TEST]** `tests/integration/test_incremental_learning.py`.
+
+- [ ] **Impact Analysis & Simulation**
+    - [ ] Implement `ImpactAnalyzer` algorithm.
+    - [ ] **[STATE]** Log risk findings to `findings.md`.
+    - [ ] Add `devmind simulate "change signature of X"` command.
+
+### 🧠 Phase 3: Semantic Understanding & RAG [Week 3]
+**Goal:** Understand what the code *means* using Vector DB.
+
+- [ ] **Semantic Engine**
+    - [ ] Implement `CodeEmbedder`.
+    - [ ] **Enhancement:** Context-Aware Chunking strategy:
+        - [ ] Chunk = `Docstring` + `Signature` + `Body subset` + `Context Tags`.
+    - [ ] **[TEST]** Verify chunking logic in `tests/unit/semantic/test_chunking.py`.
+
+- [ ] **Vector Storage (Qdrant)**
+    - [ ] Implement `QdrantAdapter` for `repository_code` collection.
+    - [ ] Implement "Code Clone Detection" logic (Cosine Similarity).
+
+- [ ] **Hybrid Query Engine**
+    - [ ] Create `RAGService` combining Neo4j (Structure) + Qdrant (Meaning).
+    - [ ] Implement prompts: `CONCEPT_EXPLAINER`, `SIMILAR_CODE_FINDER`.
+
+### 🤖 Phase 4: Intelligence, Chat & Polish [Week 4]
+**Goal:** Natural Language Interface and Production Readiness.
+
+- [ ] **Intelligent Agent Integration**
+    - [ ] Integrate deeper tools into `ChatAgent`.
+    - [ ] Add "Dynamic Logic" confidence score (LLM guesses dynamic calls).
+
+- [ ] **Advanced Features**
+    - [ ] **Visualization:** `devmind visualize call-graph <func>` (Mermaid Flowchart).
+    - [ ] **Architecture:** Auto-tagging layers (API/Core/Data) based on heuristics.
+    - [ ] **[STATE]** Finalize `progress.md` with complete session stats.
+
+- [ ] **Performance & Documentation**
+    - [ ] Benchmark: Ensure 1000 files parse < 15s.
+    - [ ] Write `docs/DEEP_ANALYSIS_GUIDE.md`.
+    - [ ] Write `docs/GRAPH_SCHEMA.md`.
+
+---
+
 ## NOTES & ASSUMPTIONS
 
 - Python support is priority (Go optional in Phase 2)
@@ -479,4 +650,5 @@ In `docs/` folder:
 
 **Document Created:** 2026-02-03  
 **Author:** DevMind Team  
-**Status:** Ready for Review & Discussion
+**Status:** Ready for Implementation
+

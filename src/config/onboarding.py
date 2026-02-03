@@ -43,11 +43,11 @@ class DevMindSetupWizard:
         """Basic URL validation"""
         return url.startswith("http://") or url.startswith("https://")
 
-    def fetch_ollama_models(self, url: str) -> list:
+    def fetch_ollama_models(self, url: str, auth: tuple = None) -> list:
         """Fetch available models from Ollama server"""
         try:
             import requests
-            response = requests.get(f"{url}/api/tags", timeout=3)
+            response = requests.get(f"{url}/api/tags", timeout=3, auth=auth)
             if response.status_code == 200:
                 data = response.json()
                 models = [m["name"] for m in data.get("models", [])]
@@ -93,7 +93,8 @@ class DevMindSetupWizard:
         print("\n🔐 Does your Ollama server require authentication?")
         use_auth = self.input_with_default("Use basic authentication? (y/n)", "n").lower() == "y"
         
-        config = {"OLLAMA_URL": url}
+        config = {"OLLAMA_BASE_URL": url}
+        auth = None
         
         if use_auth:
             username = self.input_with_default("Ollama username", "")
@@ -101,11 +102,12 @@ class DevMindSetupWizard:
             if username and password:
                 config["OLLAMA_USERNAME"] = username
                 config["OLLAMA_PASSWORD"] = password
+                auth = (username, password)
                 print("✅ Authentication credentials configured\n")
 
         # Try to fetch available models
         print("\n🔄 Fetching available models from Ollama...")
-        models = self.fetch_ollama_models(url)
+        models = self.fetch_ollama_models(url, auth)
 
         if models:
             print(f"\n✅ Found {len(models)} available models\n")
@@ -122,10 +124,10 @@ class DevMindSetupWizard:
             )
             
             role_map = {
-                "1": ("OLLAMA_MODEL", "General Purpose LLM", "for chat and reasoning"),
-                "2": ("OLLAMA_MODEL_CODER", "Code Specialist LLM", "for code generation"),
+                "1": ("OLLAMA_MODEL_GENERAL", "General Purpose LLM", "for chat and reasoning"),
+                "2": ("OLLAMA_MODEL_CODE", "Code Specialist LLM", "for code generation"),
                 "3": ("OLLAMA_MODEL_TOOL", "Tool Calling LLM", "for function calling"),
-                "4": ("OLLAMA_MODEL_EMBED", "Embedding Model", "for RAG/semantic search"),
+                "4": ("OLLAMA_MODEL_EMBEDDING", "Embedding Model", "for RAG/semantic search"),
             }
             
             for role_num in roles_input.split(","):
@@ -136,15 +138,15 @@ class DevMindSetupWizard:
                     config[config_key] = model
             
             # Default: if no roles selected, use first model for general purpose
-            if "OLLAMA_MODEL" not in config:
-                config["OLLAMA_MODEL"] = models[0]
+            if "OLLAMA_MODEL_GENERAL" not in config:
+                config["OLLAMA_MODEL_GENERAL"] = models[0]
         else:
             print("\n⚠️  Could not fetch models from Ollama server.")
             print("   Make sure Ollama is running at the URL you provided.\n")
             model = self.input_with_default(
                 "Enter model name manually (mistral, llama2, neural-chat, etc)", "mistral"
             )
-            config["OLLAMA_MODEL"] = model
+            config["OLLAMA_MODEL_GENERAL"] = model
 
         return config
 

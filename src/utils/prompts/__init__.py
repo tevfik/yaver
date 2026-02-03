@@ -43,3 +43,14 @@ PLANNER_USER_TEMPLATE = load_raw_prompt("planner_user.md")
 CODER_USER_TEMPLATE = load_raw_prompt("coder_user.md")
 CODER_FIX_TEMPLATE = load_raw_prompt("coder_fix.md")
 REVIEWER_USER_TEMPLATE = load_raw_prompt("reviewer_user.md")
+
+# Deep Analysis System Prompts
+CALL_GRAPH_ANALYZER_PROMPT = load_raw_prompt("call_graph_analyzer.md")
+IMPACT_ANALYZER_PROMPT = load_raw_prompt("impact_analyzer.md")
+ARCHITECTURE_QUESTIONER_PROMPT = load_raw_prompt("architecture_questioner.md")
+
+# RAG Service Prompts
+RAG_INTENT_CLASSIFIER_PROMPT = load_raw_prompt("rag_intent_classifier.md")
+RAG_QA_ARCHITECT_PROMPT = load_raw_prompt("rag_qa_architect.md")
+CONCEPT_EXPLAINER_PROMPT = load_raw_prompt("concept_explainer.md")
+SIMILAR_CODE_FINDER_PROMPT = load_raw_prompt("similar_code_finder.md")

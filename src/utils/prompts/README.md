@@ -11,6 +11,8 @@ The prompts are stored as external Markdown files to allow for easier editing an
 
 ## Special Prompts
 
+These prompts do NOT follow the standard System Prompt structure. They are lightweight, task-specific templates used by RAG services or specialized tools.
+
 ### Git Analyzer Report (`git_analyzer_report.md`)
 Unlike standard agent prompts, this prompt is used for the **Analysis Mode** report generation.
 - **Agent**: GitAnalyzer
@@ -19,6 +21,21 @@ Unlike standard agent prompts, this prompt is used for the **Analysis Mode** rep
 - **Variables**:
   - `{context}`: Aggregated stats, file lists, and code structure summaries.
   - `{user_request}`: User's specific instructions for the report.
+
+### RAG Service Prompts
+These are minimal, focused prompts for the Retrieval-Augmented Generation service:
+
+- **`rag_intent_classifier.md`**: Classifies user questions as STRUCTURE/SEMANTIC/HYBRID to route queries to Neo4j or Qdrant.
+- **`rag_qa_architect.md`**: Answers architecture questions using combined graph + vector context.
+- **`concept_explainer.md`**: Explains programming concepts found in the codebase with pedagogical clarity.
+- **`similar_code_finder.md`**: Identifies code clones and recommends refactoring.
+
+### Deep Analysis Prompts
+Specialized prompts for the Deep Code Analysis system (Neo4j + Qdrant):
+
+- **`call_graph_analyzer.md`**: Traces function calls, identifies callers/callees, detects circular dependencies.
+- **`impact_analyzer.md`**: Predicts breaking changes when code is modified, assesses risk levels.
+- **`architecture_questioner.md`**: Evaluates architecture, detects patterns/anti-patterns, recommends improvements.
 
 ## Standard System Prompt Structure (Template)
 

@@ -96,7 +96,7 @@ else:
 
 setup(
     name="devmind",
-    version="1.0.0",
+    version="1.1.0",
     author="tevfik.kadioglu",
     author_email="tevfik.kadioglu@gmail.com",
     description="Fully functional AI-powered development assistant with Qdrant, Neo4j, Ollama, LangChain",

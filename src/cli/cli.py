@@ -87,7 +87,7 @@ Examples:
     parser.add_argument(
         '--version',
         action='version',
-        version='DevMind v1.0.0'
+        version='DevMind v1.1.0'
     )
     
     # Subcommands
@@ -221,6 +221,7 @@ Examples:
     )
     analyze_parser.add_argument('--target', help='Target function/class for impact analysis')
     analyze_parser.add_argument('--incremental', action='store_true', help='Only analyze changed files')
+    analyze_parser.add_argument('--project-id', help='Associate analysis with a specific project ID')
     analyze_parser.set_defaults(func=handle_analyze)
     
     # Learn command - Deep repository learning (Neo4j + Qdrant)
@@ -659,8 +660,13 @@ def handle_analyze(args):
             console = Console()
             console.print(f"[bold cyan]🔍 Starting Deep Code Analysis...[/bold cyan]")
             
-            # Create session ID
-            session_id = f"cli_{uuid.uuid4().hex[:8]}"
+            # Create session ID (or use provided project_id)
+            if hasattr(args, 'project_id') and args.project_id:
+                session_id = args.project_id
+                console.print(f"[dim]Using Project ID: {session_id}[/dim]")
+            else:
+                session_id = f"cli_{uuid.uuid4().hex[:8]}"
+            
             repo_path = Path(args.path)
             
             # Neo4j Config
@@ -684,6 +690,11 @@ def handle_analyze(args):
                 # But CLI args don't have it yet. Let's assume standard analysis for now
                 # or add argument in analyze_parser
                 analyzer.analyze_repository(incremental=getattr(args, 'incremental', False))
+                
+                # Semantic extraction for deep analysis
+                console.print(f"[bold]🧠 Extracting Semantic Facts...[/bold]")
+                analyzer.extract_semantic_facts()
+                
                 duration = time.time() - start_time
                 
                 console.print(f"[bold green]✅ Analysis Complete![/bold green]")
@@ -901,6 +912,11 @@ def handle_learn(args):
             duration = time.time() - start_time
             progress.update(task, description=f"✅ Analysis complete ({duration:.2f}s)")
         
+        # Semantic Fact Extraction
+        # We run this outside the main analysis progress bar to avoid UI conflicts
+        console.print(f"\n[bold]🧠 Enriching Knowledge Graph...[/bold]")
+        analyzer.extract_semantic_facts()
+        
         # Display results
         console.print(f"\n[bold green]✅ Repository Learning Complete![/bold green]")
         console.print(f"   Duration: {duration:.2f}s")
@@ -923,6 +939,23 @@ def handle_learn(args):
                     node_type = record["type"] or "Unknown"
                     count = record["count"]
                     console.print(f"   • {node_type}: {count}")
+
+            # Show File Language Breakdown
+            with analyzer.neo4j_adapter.driver.session() as db_session:
+                result = db_session.run("""
+                    MATCH (n:File)
+                    WHERE n.repo_id = $repo_id
+                    RETURN n.language as lang, count(n) as count
+                    ORDER BY count DESC
+                """, {"repo_id": repo_id})
+                
+                langs = list(result)
+                if langs:
+                    console.print("\n   [dim]File Types:[/dim]")
+                    for record in langs:
+                        lang = record["lang"] or "unknown"
+                        count = record["count"]
+                        console.print(f"   [dim]• {lang}: {count}[/dim]")
             
             # Show session-level statistics if multiple repos in session
             with analyzer.neo4j_adapter.driver.session() as db_session:

@@ -13,12 +13,14 @@ from yaver_cli.agent_base import setup_logger
 
 console = Console()
 
+
 def extract_code_block(text: str) -> str:
     """Extracts code from markdown code blocks"""
-    match = re.search(r'```(?:\w+)?\n(.*?)```', text, re.DOTALL)
+    match = re.search(r"```(?:\w+)?\n(.*?)```", text, re.DOTALL)
     if match:
         return match.group(1).strip()
     return text.strip()
+
 
 def handle_edit(args):
     """
@@ -33,17 +35,24 @@ def handle_edit(args):
 
     with console.status(f"[bold green]Reading {file_path}..."):
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 original_content = f.read()
         except Exception as e:
             console.print(f"[bold red]Error reading file:[/bold red] {e}")
             return
 
-    console.print(Panel(f"[bold blue]File:[/bold blue] {file_path}\n[bold blue]Request:[/bold blue] {instructions}", title="Yaver Edit"))
+    console.print(
+        Panel(
+            f"[bold blue]File:[/bold blue] {file_path}\n[bold blue]Request:[/bold blue] {instructions}",
+            title="Yaver Edit",
+        )
+    )
 
     with console.status("[bold yellow]AI is working on your changes..."):
         coder_agent = CoderAgent()
-        result = coder_agent.edit_file_content(original_content, instructions, file_path)
+        result = coder_agent.edit_file_content(
+            original_content, instructions, file_path
+        )
         new_content = extract_code_block(result)
 
     # Calculate diff
@@ -52,9 +61,9 @@ def handle_edit(args):
         new_content.splitlines(),
         fromfile=f"a/{file_path}",
         tofile=f"b/{file_path}",
-        lineterm=""
+        lineterm="",
     )
-    
+
     diff_text = "\n".join(diff)
 
     if not diff_text:
@@ -67,9 +76,11 @@ def handle_edit(args):
 
     if Confirm.ask("\n[bold green]Do you want to apply these changes?[/bold green]"):
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(new_content)
-            console.print(f"[bold green]✔ Successfully updated {file_path}[/bold green]")
+            console.print(
+                f"[bold green]✔ Successfully updated {file_path}[/bold green]"
+            )
         except Exception as e:
             console.print(f"[bold red]Error writing file:[/bold red] {e}")
     else:

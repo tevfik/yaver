@@ -12,6 +12,7 @@ from typing import Tuple, Optional
 
 logger = logging.getLogger("yaver_cli")
 
+
 class Sandbox:
     def __init__(self, timeout: int = 10):
         self.timeout = timeout
@@ -22,11 +23,13 @@ class Sandbox:
         Returns: (success: bool, output: str)
         """
         run_args = run_args or []
-        
+
         # Identify dependencies (simple heuristic or pre-installed)
         # In a real scenario, we would install requirements inside a docker container.
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", delete=False
+        ) as temp_file:
             temp_file.write(code)
             temp_file_path = temp_file.name
 
@@ -34,20 +37,25 @@ class Sandbox:
             # Run the code
             cmd = [sys.executable, temp_file_path] + run_args
             logger.info(f"Sandbox: Executing {cmd}")
-            
+
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout
+                cmd, capture_output=True, text=True, timeout=self.timeout
             )
-            
-            output_log = "--- STDOUT ---\n" + result.stdout + "\n--- STDERR ---\n" + result.stderr
-            
+
+            output_log = (
+                "--- STDOUT ---\n"
+                + result.stdout
+                + "\n--- STDERR ---\n"
+                + result.stderr
+            )
+
             if result.returncode == 0:
                 return True, output_log
             else:
-                return False, f"Execution Failed (Exit Code {result.returncode}):\n{output_log}"
+                return (
+                    False,
+                    f"Execution Failed (Exit Code {result.returncode}):\n{output_log}",
+                )
 
         except subprocess.TimeoutExpired:
             return False, f"Execution Timed Out after {self.timeout} seconds."

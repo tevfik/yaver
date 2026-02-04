@@ -13,7 +13,7 @@ That's it. Everything works out of the box.
 
 ✅ **AI Agent Framework** - LangChain + LanGraph orchestration
 ✅ **Local LLM** - Ollama integration (bring your own model)
-✅ **Semantic Search** - Qdrant vector database  
+✅ **Semantic Search** - Qdrant vector database
 ✅ **Code Graph Analysis** - Neo4j for dependency mapping
 ✅ **Memory System** - Chromadb + Mem0 for context retention
 ✅ **Git Analysis** - GitPython integration

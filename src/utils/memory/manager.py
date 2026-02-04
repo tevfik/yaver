@@ -15,15 +15,16 @@ except ImportError:
 
 logger = logging.getLogger("memory_manager")
 
+
 class MemoryManager:
     """Manages agent memory using mem0."""
-    
+
     def __init__(self, user_id: str = "default_user"):
         self.user_id = user_id
         self.memory = None
         self.qdrant_config = QdrantConfig()
         self.ollama_config = OllamaConfig()
-        
+
         if Memory:
             try:
                 # Configure mem0 for Ollama + Qdrant
@@ -34,25 +35,25 @@ class MemoryManager:
                             "host": self.qdrant_config.host,
                             "port": self.qdrant_config.port,
                             "collection_name": self.qdrant_config.collection,
-                            "embedding_model_dims": 768
-                        }
+                            "embedding_model_dims": 768,
+                        },
                     },
                     "llm": {
                         "provider": "ollama",
                         "config": {
                             "model": self.ollama_config.model_general,
-                            "temperature": 0.1
-                        }
+                            "temperature": 0.1,
+                        },
                     },
                     "embedder": {
                         "provider": "ollama",
-                        "config": {
-                            "model": self.ollama_config.model_embedding
-                        }
-                    }
+                        "config": {"model": self.ollama_config.model_embedding},
+                    },
                 }
-                
-                logger.info(f"Initializing mem0 with config: Ollama={self.ollama_config.model_general}, Qdrant={self.qdrant_config.host}")
+
+                logger.info(
+                    f"Initializing mem0 with config: Ollama={self.ollama_config.model_general}, Qdrant={self.qdrant_config.host}"
+                )
                 self.memory = Memory.from_config(config)
                 logger.info("mem0 initialized successfully")
             except Exception as e:

@@ -216,7 +216,7 @@ $ yaver agent analyze my-saas
 ⚠️  Issues Found:
 [1] Remove dead code (Priority 9)
     Effort: 5 min | Risk: LOW
-    
+
 [2] Refactor complexity (Priority 7)
     Effort: 1-2 hrs | Risk: MEDIUM
 ```
@@ -790,7 +790,7 @@ yaver learn ~/hobby/game-engine --project-id=hobby-project
 yaver chat --project-id=work-project
 > "How is user authentication implemented?"
 
-# Query hobby project only  
+# Query hobby project only
 yaver chat --project-id=hobby-project
 > "How does the physics engine work?"
 
@@ -1153,7 +1153,7 @@ yaver --version
 
 ---
 
-**Last Updated:** February 3, 2026  
+**Last Updated:** February 3, 2026
 **Yaver Version:** 1.0.0
 
 For more information, visit the [Yaver Documentation](https://github.com/tevfik/yaver)

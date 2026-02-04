@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class QueryType(str, Enum):
     """Types of queries based on intent."""
+
     SEMANTIC = "semantic"  # "Where is the authentication code?"
     STRUCTURAL = "structural"  # "What calls this function?"
     TEMPORAL = "temporal"  # "Did we solve this before?"
@@ -33,6 +34,7 @@ class QueryType(str, Enum):
 @dataclass
 class QueryResult:
     """Result from a single source."""
+
     source: str  # "qdrant", "neo4j", "sqlite", "code_smell", "ripple_effect"
     query_type: QueryType
     results: List[Dict[str, Any]]
@@ -44,6 +46,7 @@ class QueryResult:
 @dataclass
 class FusedResult:
     """Result fused from multiple sources."""
+
     query: str
     query_type: QueryType
     sources: List[QueryResult]
@@ -58,24 +61,64 @@ class QueryClassifier:
 
     # Keywords for each query type
     SEMANTIC_KEYWORDS = {
-        "where", "find", "locate", "search", "show", "list", "get",
-        "how", "count", "contains", "has", "includes"
+        "where",
+        "find",
+        "locate",
+        "search",
+        "show",
+        "list",
+        "get",
+        "how",
+        "count",
+        "contains",
+        "has",
+        "includes",
     }
 
     STRUCTURAL_KEYWORDS = {
-        "call", "called", "depend", "dependency", "chain", "path",
-        "impact", "affect", "ripple", "break", "circular", "import",
-        "usage", "reference", "hierarchy", "relation"
+        "call",
+        "called",
+        "depend",
+        "dependency",
+        "chain",
+        "path",
+        "impact",
+        "affect",
+        "ripple",
+        "break",
+        "circular",
+        "import",
+        "usage",
+        "reference",
+        "hierarchy",
+        "relation",
     }
 
     TEMPORAL_KEYWORDS = {
-        "before", "did", "history", "previous", "last", "past",
-        "solved", "tried", "attempt", "remember", "encounter"
+        "before",
+        "did",
+        "history",
+        "previous",
+        "last",
+        "past",
+        "solved",
+        "tried",
+        "attempt",
+        "remember",
+        "encounter",
     }
 
     ANALYTICAL_KEYWORDS = {
-        "quality", "complexity", "issue", "smell", "critical",
-        "important", "report", "analyze", "metric", "insight"
+        "quality",
+        "complexity",
+        "issue",
+        "smell",
+        "critical",
+        "important",
+        "report",
+        "analyze",
+        "metric",
+        "insight",
     }
 
     @staticmethod
@@ -99,7 +142,9 @@ class QueryClassifier:
 
         # If multiple types matched equally, use combined
         max_score = max(scores.values()) if scores.values() else 0
-        matched_types = [qtype for qtype, score in scores.items() if score == max_score and score > 0]
+        matched_types = [
+            qtype for qtype, score in scores.items() if score == max_score and score > 0
+        ]
 
         if len(matched_types) > 1:
             return QueryType.COMBINED
@@ -123,15 +168,16 @@ class MemoryQueryOrchestrator:
     def execute_query(self, query: str, context: Optional[Dict] = None) -> FusedResult:
         """
         Execute a query against all available memory sources.
-        
+
         Args:
             query: User query string
             context: Optional context dict (repo_id, file_path, etc.)
-            
+
         Returns:
             FusedResult with results from all applicable sources
         """
         import time
+
         start_time = time.time()
 
         # Classify query
@@ -146,7 +192,11 @@ class MemoryQueryOrchestrator:
             if qdrant_result:
                 results.append(qdrant_result)
 
-        if query_type in [QueryType.STRUCTURAL, QueryType.ANALYTICAL, QueryType.COMBINED]:
+        if query_type in [
+            QueryType.STRUCTURAL,
+            QueryType.ANALYTICAL,
+            QueryType.COMBINED,
+        ]:
             neo4j_result = self._query_neo4j(query, context)
             if neo4j_result:
                 results.append(neo4j_result)
@@ -165,7 +215,9 @@ class MemoryQueryOrchestrator:
 
         return fused
 
-    def _query_qdrant(self, query: str, context: Optional[Dict] = None) -> Optional[QueryResult]:
+    def _query_qdrant(
+        self, query: str, context: Optional[Dict] = None
+    ) -> Optional[QueryResult]:
         """Query Qdrant for semantic search (stub - would connect to actual Qdrant)."""
         logger.debug(f"Querying Qdrant: {query}")
 
@@ -186,7 +238,9 @@ class MemoryQueryOrchestrator:
             explanation="Found via semantic search in code memory",
         )
 
-    def _query_neo4j(self, query: str, context: Optional[Dict] = None) -> Optional[QueryResult]:
+    def _query_neo4j(
+        self, query: str, context: Optional[Dict] = None
+    ) -> Optional[QueryResult]:
         """Query Neo4j for structural analysis (stub)."""
         logger.debug(f"Querying Neo4j: {query}")
 
@@ -206,7 +260,9 @@ class MemoryQueryOrchestrator:
             explanation="Found via graph analysis of code structure",
         )
 
-    def _query_sqlite(self, query: str, context: Optional[Dict] = None) -> Optional[QueryResult]:
+    def _query_sqlite(
+        self, query: str, context: Optional[Dict] = None
+    ) -> Optional[QueryResult]:
         """Query SQLite for episodic memory (stub)."""
         logger.debug(f"Querying SQLite: {query}")
 
@@ -227,15 +283,18 @@ class MemoryQueryOrchestrator:
             explanation="Found via episodic memory of previous interactions",
         )
 
-    def _fuse_results(self, query: str, query_type: QueryType, 
-                     results: List[QueryResult], execution_time: float) -> FusedResult:
+    def _fuse_results(
+        self,
+        query: str,
+        query_type: QueryType,
+        results: List[QueryResult],
+        execution_time: float,
+    ) -> FusedResult:
         """Fuse results from multiple sources."""
 
         # Calculate overall confidence (average)
         overall_confidence = (
-            sum(r.confidence for r in results) / len(results)
-            if results
-            else 0.0
+            sum(r.confidence for r in results) / len(results) if results else 0.0
         )
 
         # Merge result lists
@@ -253,7 +312,9 @@ class MemoryQueryOrchestrator:
         fused_results.sort(key=lambda x: x.get("confidence", 0), reverse=True)
 
         # Generate recommendations
-        recommendations = self._generate_recommendations(query, fused_results, source_map)
+        recommendations = self._generate_recommendations(
+            query, fused_results, source_map
+        )
 
         return FusedResult(
             query=query,
@@ -265,37 +326,56 @@ class MemoryQueryOrchestrator:
             execution_time_ms=execution_time,
         )
 
-    def _generate_recommendations(self, query: str, results: List[Dict], 
-                                 source_map: Dict[str, QueryResult]) -> List[str]:
+    def _generate_recommendations(
+        self, query: str, results: List[Dict], source_map: Dict[str, QueryResult]
+    ) -> List[str]:
         """Generate recommendations based on results."""
         recommendations = []
 
         if not results:
-            recommendations.append("No results found. Try a more specific query or different keywords.")
+            recommendations.append(
+                "No results found. Try a more specific query or different keywords."
+            )
             return recommendations
 
         # If only one source, suggest checking others
         if len(source_map) == 1:
             source = list(source_map.keys())[0]
             if source == "qdrant":
-                recommendations.append("💡 Consider structural analysis (Neo4j) to understand call chains.")
+                recommendations.append(
+                    "💡 Consider structural analysis (Neo4j) to understand call chains."
+                )
             elif source == "neo4j":
-                recommendations.append("💡 Consider semantic search (Qdrant) for related code patterns.")
+                recommendations.append(
+                    "💡 Consider semantic search (Qdrant) for related code patterns."
+                )
             elif source == "sqlite":
-                recommendations.append("💡 Check if this is documented in code structure (Neo4j).")
+                recommendations.append(
+                    "💡 Check if this is documented in code structure (Neo4j)."
+                )
 
         # If low confidence, suggest refining
-        avg_confidence = sum(r.get("confidence", 0) for r in results) / len(results) if results else 0
+        avg_confidence = (
+            sum(r.get("confidence", 0) for r in results) / len(results)
+            if results
+            else 0
+        )
         if avg_confidence < 0.6:
-            recommendations.append("⚠️  Low confidence results. Try refining your query.")
+            recommendations.append(
+                "⚠️  Low confidence results. Try refining your query."
+            )
 
         # If high confidence, suggest next steps
         if avg_confidence > 0.8:
-            recommendations.append("✅ High confidence results. Ready to implement or analyze further.")
+            recommendations.append(
+                "✅ High confidence results. Ready to implement or analyze further."
+            )
 
         return recommendations
 
-    def _log_query(self, query: str, query_type: QueryType, result: FusedResult) -> None:
+    def _log_query(
+        self, query: str, query_type: QueryType, result: FusedResult
+    ) -> None:
         """Log query for future reference (episodic memory)."""
         log_entry = {
             "timestamp": datetime.now().isoformat(),
@@ -314,7 +394,7 @@ class AnalyticsQueryExecutor:
     def __init__(self, code_intelligence_provider=None):
         """
         Initialize with CodeIntelligenceProvider.
-        
+
         Args:
             code_intelligence_provider: CodeIntelligenceProvider instance
         """
@@ -325,11 +405,11 @@ class AnalyticsQueryExecutor:
         if not self.provider:
             # Fallback if provider is not initialized (e.g. if graph not loaded)
             return {"error": "Code intelligence provider not initialized"}
-        
+
         # New: Use the enhanced provider to request full analysis
         # which now includes complexity and coupling from Neo4j/ImpactAnalyzer
         report = self.provider.get_code_quality_report()
-        
+
         return {
             "type": "code_quality",
             "timestamp": datetime.now().isoformat(),
@@ -340,9 +420,9 @@ class AnalyticsQueryExecutor:
                 "by_severity": report["issues_by_severity"],
             },
             "recommendations": report["recommendations"],
-            "critical_functions": report["critical_functions"][:10], # Top 10
-            "coupling": report.get("coupling", []),             # New: Coupling Data
-            "top_complexity": report.get("top_complexity", [])  # New: Complexity Data
+            "critical_functions": report["critical_functions"][:10],  # Top 10
+            "coupling": report.get("coupling", []),  # New: Coupling Data
+            "top_complexity": report.get("top_complexity", []),  # New: Complexity Data
         }
 
     def analyze_function(self, function_id: str) -> Dict:
@@ -369,7 +449,7 @@ class AnalyticsQueryExecutor:
 class CombinedMemoryInterface:
     """
     High-level interface combining all memory backends.
-    
+
     Used by agents to query combined memory with single interface.
     """
 
@@ -381,10 +461,10 @@ class CombinedMemoryInterface:
     def query(self, question: str) -> Dict:
         """
         User-facing query method.
-        
+
         Args:
             question: Natural language question
-            
+
         Returns:
             Dictionary with fused results and recommendations
         """
@@ -411,14 +491,14 @@ class CombinedMemoryInterface:
     def solve_problem(self, problem_description: str) -> Dict:
         """
         Comprehensive problem solving flow.
-        
+
         1. Query: Find related code
         2. Analyze: Check code quality
         3. Recommend: Suggest solution
-        
+
         Args:
             problem_description: Description of problem to solve
-            
+
         Returns:
             Structured problem-solving context
         """
@@ -431,9 +511,13 @@ class CombinedMemoryInterface:
         # Step 3: Build recommendations
         recommendations = []
         if query_result["overall_confidence"] > 0.7:
-            recommendations.append("✅ High confidence matches found. Ready to implement solution.")
+            recommendations.append(
+                "✅ High confidence matches found. Ready to implement solution."
+            )
         else:
-            recommendations.append("⚠️  Low confidence. May need to gather more context.")
+            recommendations.append(
+                "⚠️  Low confidence. May need to gather more context."
+            )
 
         return {
             "problem": problem_description,

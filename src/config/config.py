@@ -12,44 +12,81 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class OllamaConfig(BaseSettings):
     """Ollama LLM configuration"""
+
     model_config = SettingsConfigDict(
         env_file=(".env", str(Path.home() / ".yaver" / ".env")),
-        env_file_encoding="utf-8", 
-        extra="ignore"
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
-    base_url: str = Field(default="http://localhost:11434", validation_alias="OLLAMA_BASE_URL")
-    model_general: str = Field(default="llama3.2:3b-instruct-q4_K_M", validation_alias="OLLAMA_MODEL_GENERAL")
-    model_code: str = Field(default="qwen2.5-coder:7b-instruct-q4_K_M", validation_alias="OLLAMA_MODEL_CODE")
-    model_extraction: str = Field(default="qwen2.5-coder:7b-instruct-q4_K_M", validation_alias="OLLAMA_MODEL_EXTRACTION")
-    model_embedding: str = Field(default="nomic-embed-text:latest", validation_alias="OLLAMA_MODEL_EMBEDDING")
+    base_url: str = Field(
+        default="http://localhost:11434", validation_alias="OLLAMA_BASE_URL"
+    )
+    model_general: str = Field(
+        default="llama3.2:3b-instruct-q4_K_M", validation_alias="OLLAMA_MODEL_GENERAL"
+    )
+    model_code: str = Field(
+        default="qwen2.5-coder:7b-instruct-q4_K_M", validation_alias="OLLAMA_MODEL_CODE"
+    )
+    model_extraction: str = Field(
+        default="qwen2.5-coder:7b-instruct-q4_K_M",
+        validation_alias="OLLAMA_MODEL_EXTRACTION",
+    )
+    model_embedding: str = Field(
+        default="nomic-embed-text:latest", validation_alias="OLLAMA_MODEL_EMBEDDING"
+    )
     username: Optional[str] = Field(default=None, validation_alias="OLLAMA_USERNAME")
     password: Optional[str] = Field(default=None, validation_alias="OLLAMA_PASSWORD")
 
 
 class ProjectConfig(BaseSettings):
     """Project and output configuration"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
-    api_base_url: str = Field(default="http://localhost:8080/api/v1", validation_alias="API_BASE_URL")
-    default_output_dir: str = Field(default="./output", validation_alias="DEFAULT_OUTPUT_DIR")
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+    api_base_url: str = Field(
+        default="http://localhost:8080/api/v1", validation_alias="API_BASE_URL"
+    )
+    default_output_dir: str = Field(
+        default="./output", validation_alias="DEFAULT_OUTPUT_DIR"
+    )
     enable_backup: bool = Field(default=True, validation_alias="ENABLE_BACKUP")
     backup_dir: str = Field(default="~/.yaver/backups", validation_alias="BACKUP_DIR")
     max_iterations: int = Field(default=5, validation_alias="MAX_ITERATIONS")
-    max_files_per_iteration: int = Field(default=10, validation_alias="MAX_FILES_PER_ITERATION")
+    max_files_per_iteration: int = Field(
+        default=10, validation_alias="MAX_FILES_PER_ITERATION"
+    )
 
 
 class CodeAnalysisConfig(BaseSettings):
     """Code analysis thresholds"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
-    max_complexity_warning: int = Field(default=10, validation_alias="MAX_COMPLEXITY_WARNING")
-    max_complexity_error: int = Field(default=15, validation_alias="MAX_COMPLEXITY_ERROR")
-    min_maintainability_index: int = Field(default=65, validation_alias="MIN_MAINTAINABILITY_INDEX")
-    enable_security_scan: bool = Field(default=True, validation_alias="ENABLE_SECURITY_SCAN")
-    enable_type_checking: bool = Field(default=True, validation_alias="ENABLE_TYPE_CHECKING")
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+    max_complexity_warning: int = Field(
+        default=10, validation_alias="MAX_COMPLEXITY_WARNING"
+    )
+    max_complexity_error: int = Field(
+        default=15, validation_alias="MAX_COMPLEXITY_ERROR"
+    )
+    min_maintainability_index: int = Field(
+        default=65, validation_alias="MIN_MAINTAINABILITY_INDEX"
+    )
+    enable_security_scan: bool = Field(
+        default=True, validation_alias="ENABLE_SECURITY_SCAN"
+    )
+    enable_type_checking: bool = Field(
+        default=True, validation_alias="ENABLE_TYPE_CHECKING"
+    )
 
 
 class GitConfig(BaseSettings):
     """Git operations configuration"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
     clone_depth: int = Field(default=50, validation_alias="CLONE_DEPTH")
     max_repo_size_mb: int = Field(default=500, validation_alias="MAX_REPO_SIZE_MB")
     enable_submodules: bool = Field(default=False, validation_alias="ENABLE_SUBMODULES")
@@ -59,39 +96,53 @@ class GitConfig(BaseSettings):
 
 class VectorDBConfig(BaseSettings):
     """Vector database configuration"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
-    chroma_persist_dir: str = Field(default="./chroma_db", validation_alias="CHROMA_PERSIST_DIR")
-    embedding_batch_size: int = Field(default=100, validation_alias="EMBEDDING_BATCH_SIZE")
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+    chroma_persist_dir: str = Field(
+        default="./chroma_db", validation_alias="CHROMA_PERSIST_DIR"
+    )
+    embedding_batch_size: int = Field(
+        default=100, validation_alias="EMBEDDING_BATCH_SIZE"
+    )
     top_k_similar_files: int = Field(default=5, validation_alias="TOP_K_SIMILAR_FILES")
 
 
 class QdrantConfig(BaseSettings):
     """Qdrant vector database configuration"""
+
     model_config = SettingsConfigDict(
         env_file=(".env", str(Path.home() / ".yaver" / ".env")),
-        env_file_encoding="utf-8", 
-        extra="ignore"
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
     host: Optional[str] = Field(default="localhost", validation_alias="QDRANT_HOST")
     port: int = Field(default=6333, validation_alias="QDRANT_PORT")
     path: Optional[str] = Field(default=None, validation_alias="QDRANT_PATH")
-    collection: str = Field(default="yaver_memory", validation_alias="QDRANT_COLLECTION")
+    collection: str = Field(
+        default="yaver_memory", validation_alias="QDRANT_COLLECTION"
+    )
     use_local: bool = Field(default=False, validation_alias="QDRANT_USE_LOCAL")
 
 
 class LeannConfig(BaseSettings):
     """Leann vector database configuration (experimental)"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
     # Base path for storing indexes. If None, defaults to ~/.yaver/leann_indexes
     base_path: Optional[str] = Field(default=None, validation_alias="LEANN_BASE_PATH")
 
 
 class Neo4jConfig(BaseSettings):
     """Neo4j graph database configuration"""
+
     model_config = SettingsConfigDict(
         env_file=(".env", str(Path.home() / ".yaver" / ".env")),
-        env_file_encoding="utf-8", 
-        extra="ignore"
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
     uri: str = Field(default="bolt://localhost:7687", validation_alias="NEO4J_URI")
     username: str = Field(default="neo4j", validation_alias="NEO4J_USERNAME")
@@ -100,63 +151,110 @@ class Neo4jConfig(BaseSettings):
 
 class MemoryConfig(BaseSettings):
     """Memory management configuration"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
     enable_memory: bool = Field(default=True, validation_alias="ENABLE_MEMORY")
     memory_type: str = Field(default="qdrant", validation_alias="MEMORY_TYPE")
-    short_term_limit: int = Field(default=50, validation_alias="SHORT_TERM_MEMORY_LIMIT")
-    long_term_limit: int = Field(default=1000, validation_alias="LONG_TERM_MEMORY_LIMIT")
+    short_term_limit: int = Field(
+        default=50, validation_alias="SHORT_TERM_MEMORY_LIMIT"
+    )
+    long_term_limit: int = Field(
+        default=1000, validation_alias="LONG_TERM_MEMORY_LIMIT"
+    )
 
 
 class LoggingConfig(BaseSettings):
     """Logging configuration"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
     log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
-    log_file: str = Field(default="yaver_cli/logs/yaver.log", validation_alias="LOG_FILE")
-    enable_rich_logging: bool = Field(default=True, validation_alias="ENABLE_RICH_LOGGING")
+    log_file: str = Field(
+        default="yaver_cli/logs/yaver.log", validation_alias="LOG_FILE"
+    )
+    enable_rich_logging: bool = Field(
+        default=True, validation_alias="ENABLE_RICH_LOGGING"
+    )
 
 
 class UIConfig(BaseSettings):
     """UI configuration"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
     gradio_server_port: int = Field(default=7860, validation_alias="GRADIO_SERVER_PORT")
     gradio_share: bool = Field(default=False, validation_alias="GRADIO_SHARE")
-    enable_gradio_queue: bool = Field(default=True, validation_alias="ENABLE_GRADIO_QUEUE")
+    enable_gradio_queue: bool = Field(
+        default=True, validation_alias="ENABLE_GRADIO_QUEUE"
+    )
 
 
 class TaskConfig(BaseSettings):
     """Task management configuration"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
     max_task_depth: int = Field(default=3, validation_alias="MAX_TASK_DEPTH")
-    auto_prioritize_tasks: bool = Field(default=True, validation_alias="AUTO_PRIORITIZE_TASKS")
-    enable_parallel_execution: bool = Field(default=False, validation_alias="ENABLE_PARALLEL_EXECUTION")
+    auto_prioritize_tasks: bool = Field(
+        default=True, validation_alias="AUTO_PRIORITIZE_TASKS"
+    )
+    enable_parallel_execution: bool = Field(
+        default=False, validation_alias="ENABLE_PARALLEL_EXECUTION"
+    )
 
 
 class FeatureConfig(BaseSettings):
     """Advanced features toggles"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
-    enable_architecture_diagram: bool = Field(default=True, validation_alias="ENABLE_ARCHITECTURE_DIAGRAM")
-    enable_documentation_gen: bool = Field(default=True, validation_alias="ENABLE_DOCUMENTATION_GEN")
-    enable_test_generation: bool = Field(default=False, validation_alias="ENABLE_TEST_GENERATION")
-    enable_refactoring_suggestions: bool = Field(default=True, validation_alias="ENABLE_REFACTORING_SUGGESTIONS")
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+    enable_architecture_diagram: bool = Field(
+        default=True, validation_alias="ENABLE_ARCHITECTURE_DIAGRAM"
+    )
+    enable_documentation_gen: bool = Field(
+        default=True, validation_alias="ENABLE_DOCUMENTATION_GEN"
+    )
+    enable_test_generation: bool = Field(
+        default=False, validation_alias="ENABLE_TEST_GENERATION"
+    )
+    enable_refactoring_suggestions: bool = Field(
+        default=True, validation_alias="ENABLE_REFACTORING_SUGGESTIONS"
+    )
 
 
 class PromptsConfig(BaseSettings):
     """Configuration for Prompt files"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
-    coder_system_prompt_path: str = Field(default="yaver_cli/prompts/coder_system.md", validation_alias="PROMPT_CODER_SYSTEM_PATH")
-    reviewer_system_prompt_path: str = Field(default="yaver_cli/prompts/reviewer_system.md", validation_alias="PROMPT_REVIEWER_SYSTEM_PATH")
-    planner_system_prompt_path: str = Field(default="yaver_cli/prompts/planner_system.md", validation_alias="PROMPT_PLANNER_SYSTEM_PATH")
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+    coder_system_prompt_path: str = Field(
+        default="yaver_cli/prompts/coder_system.md",
+        validation_alias="PROMPT_CODER_SYSTEM_PATH",
+    )
+    reviewer_system_prompt_path: str = Field(
+        default="yaver_cli/prompts/reviewer_system.md",
+        validation_alias="PROMPT_REVIEWER_SYSTEM_PATH",
+    )
+    planner_system_prompt_path: str = Field(
+        default="yaver_cli/prompts/planner_system.md",
+        validation_alias="PROMPT_PLANNER_SYSTEM_PATH",
+    )
 
 
 class YaverConfig(BaseSettings):
     """Main configuration class"""
+
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
     )
-    
+
     ollama: OllamaConfig = Field(default_factory=OllamaConfig)
     project: ProjectConfig = Field(default_factory=ProjectConfig)
     code_analysis: CodeAnalysisConfig = Field(default_factory=CodeAnalysisConfig)
@@ -181,13 +279,17 @@ def get_config() -> YaverConfig:
     global _config
     if _config is None:
         _config = YaverConfig()
-        
+
         # Create necessary directories
-        os.makedirs(Path(_config.project.default_output_dir).expanduser(), exist_ok=True)
+        os.makedirs(
+            Path(_config.project.default_output_dir).expanduser(), exist_ok=True
+        )
         os.makedirs(Path(_config.project.backup_dir).expanduser(), exist_ok=True)
         os.makedirs(Path(_config.logging.log_file).parent.expanduser(), exist_ok=True)
-        os.makedirs(Path(_config.vector_db.chroma_persist_dir).expanduser(), exist_ok=True)
-        
+        os.makedirs(
+            Path(_config.vector_db.chroma_persist_dir).expanduser(), exist_ok=True
+        )
+
     return _config
 
 

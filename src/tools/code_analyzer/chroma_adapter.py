@@ -17,6 +17,7 @@ from config.config import VectorDBConfig
 
 logger = logging.getLogger(__name__)
 
+
 class ChromaAdapter:
     """
     Adapter for ChromaDB Vector Database.
@@ -41,15 +42,13 @@ class ChromaAdapter:
         try:
             # Ensure directory exists
             Path(self.persist_directory).mkdir(parents=True, exist_ok=True)
-            
+
             self.client = chromadb.PersistentClient(
-                path=self.persist_directory,
-                settings=Settings(allow_reset=True)
+                path=self.persist_directory, settings=Settings(allow_reset=True)
             )
-            
+
             self.collection = self.client.get_or_create_collection(
-                name=self.collection_name,
-                metadata={"hnsw:space": "cosine"}
+                name=self.collection_name, metadata={"hnsw:space": "cosine"}
             )
             logger.info(f"Connected to ChromaDB at {self.persist_directory}")
         except Exception as e:
@@ -73,20 +72,20 @@ class ChromaAdapter:
         documents = []
 
         for item in items:
-            embedding = item.get('embedding')
+            embedding = item.get("embedding")
             if not embedding:
                 continue
-            
+
             # Generate UUID from string ID if present
-            item_id = item.get('id')
+            item_id = item.get("id")
             if item_id:
                 point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(item_id)))
             else:
                 point_id = str(uuid.uuid4())
-            
+
             # Separate payload from embedding
-            payload = {k: v for k, v in item.items() if k not in ['embedding', 'id']}
-            
+            payload = {k: v for k, v in item.items() if k not in ["embedding", "id"]}
+
             # Chroma requires metadata values to be str, int, float, bool
             # We need to serialize complex objects or remove them
             clean_metadata = {}
@@ -99,7 +98,7 @@ class ChromaAdapter:
             ids.append(point_id)
             embeddings.append(embedding)
             metadatas.append(clean_metadata)
-            documents.append(str(payload.get('content', '')))
+            documents.append(str(payload.get("content", "")))
 
         if ids:
             try:
@@ -107,14 +106,20 @@ class ChromaAdapter:
                     ids=ids,
                     embeddings=embeddings,
                     metadatas=metadatas,
-                    documents=documents
+                    documents=documents,
                 )
                 logger.info(f"Stored {len(ids)} vectors in ChromaDB")
             except Exception as e:
                 logger.error(f"Failed to upsert to ChromaDB: {e}")
                 raise
 
-    def search(self, query_vector: List[float], limit: int = 5, score_threshold: float = 0.0, query_filter: Optional[Dict] = None) -> List[Dict[str, Any]]:
+    def search(
+        self,
+        query_vector: List[float],
+        limit: int = 5,
+        score_threshold: float = 0.0,
+        query_filter: Optional[Dict] = None,
+    ) -> List[Dict[str, Any]]:
         """
         Search for similar code snippets.
 
@@ -135,34 +140,30 @@ class ChromaAdapter:
             results = self.collection.query(
                 query_embeddings=[query_vector],
                 n_results=limit,
-                where=query_filter if query_filter else None
+                where=query_filter if query_filter else None,
             )
 
             output = []
-            if not results['ids']:
+            if not results["ids"]:
                 return []
 
             # Unpack results (Chroma returns lists of lists)
-            for i in range(len(results['ids'][0])):
-                doc_id = results['ids'][0][i]
-                distance = results['distances'][0][i] if 'distances' in results else 1.0
-                metadata = results['metadatas'][0][i] if 'metadatas' in results else {}
-                
+            for i in range(len(results["ids"][0])):
+                doc_id = results["ids"][0][i]
+                distance = results["distances"][0][i] if "distances" in results else 1.0
+                metadata = results["metadatas"][0][i] if "metadatas" in results else {}
+
                 # Convert cosine distance to similarity score approx (1 - distance)
                 # Chroma cosine distance range: 0 (identical) to 2 (opposite)
-                # But typically for normalized vectors it is 0 to 1? 
+                # But typically for normalized vectors it is 0 to 1?
                 # Assuming simple 1 - distance for now.
                 score = 1.0 - distance
-                
+
                 if score < score_threshold:
                     continue
 
-                output.append({
-                    "id": doc_id,
-                    "score": score,
-                    "payload": metadata
-                })
-            
+                output.append({"id": doc_id, "score": score, "payload": metadata})
+
             return output
 
         except Exception as e:
@@ -180,7 +181,7 @@ class ChromaAdapter:
     def delete_by_filter(self, filter_key: str, filter_value: Any):
         """
         Delete points where filter_key == filter_value.
-        
+
         Args:
             filter_key: The metadata key to filter by.
             filter_value: The value to match.
@@ -189,9 +190,7 @@ class ChromaAdapter:
             return
 
         try:
-            self.collection.delete(
-                where={filter_key: filter_value}
-            )
+            self.collection.delete(where={filter_key: filter_value})
             logger.info(f"Deleted items with {filter_key}={filter_value}")
         except Exception as e:
             logger.error(f"Failed to delete from ChromaDB: {e}")

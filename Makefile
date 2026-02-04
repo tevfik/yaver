@@ -30,7 +30,15 @@ install:
 install-dev:
 	@echo "🔧 Installing Yaver in development mode..."
 	pip install -e .
-	@echo "✅ Development installation complete!"
+	pip install pre-commit
+	pre-commit install
+	@echo "✅ Development installation complete! Pre-commit hooks installed."
+
+setup-hooks:
+	@echo "🪝 Setting up pre-commit hooks..."
+	pip install pre-commit
+	pre-commit install
+	@echo "✅ Hooks installed!"
 
 test:
 	@echo "🧪 Running unit tests..."

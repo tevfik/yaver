@@ -27,14 +27,16 @@ console = Console()
 def cmd_query(args: argparse.Namespace) -> None:
     """Execute multi-source query against memory."""
     question = args.question
-    
+
     console.print(f"\n🔍 [bold]Query:[/bold] {question}\n")
 
     state = get_state_manager()
     current_repo = state.get_current_repo()
 
     if not current_repo:
-        console.print("[red]Error: No repository context. Run 'yaver status' to set context.[/red]")
+        console.print(
+            "[red]Error: No repository context. Run 'yaver status' to set context.[/red]"
+        )
         return
 
     # Initialize combined memory interface
@@ -51,13 +53,15 @@ def cmd_query(args: argparse.Namespace) -> None:
 
     # Results table
     if result["results"]:
-        table = Table(title="Query Results", show_header=True, header_style="bold magenta")
+        table = Table(
+            title="Query Results", show_header=True, header_style="bold magenta"
+        )
         table.add_column("Source", width=12)
         table.add_column("Result", width=50)
         table.add_column("Confidence", width=12)
 
         for item in result["results"]:
-            result_text = str(item).replace('{', '').replace('}', '')[:47]
+            result_text = str(item).replace("{", "").replace("}", "")[:47]
             table.add_row(
                 item.get("source", "unknown"),
                 result_text,
@@ -85,7 +89,9 @@ def cmd_inspect(args: argparse.Namespace) -> None:
     current_repo = state.get_current_repo()
 
     if not current_repo:
-        console.print("[red]Error: No repository context. Run 'yaver status' to set context.[/red]")
+        console.print(
+            "[red]Error: No repository context. Run 'yaver status' to set context.[/red]"
+        )
         return
 
     # Initialize combined memory interface
@@ -108,11 +114,15 @@ def cmd_inspect(args: argparse.Namespace) -> None:
     # Code quality context
     quality = solution["code_quality_context"]
     console.print("\n[bold]📊 Code Quality Context:[/bold]")
-    
+
     if quality and "issues" in quality:
         console.print(f"  • Issues: {quality['issues'].get('total', 0)}")
-        console.print(f"  • Critical: {quality['issues'].get('by_severity', {}).get('critical', 0)}")
-        console.print(f"  • Warnings: {quality['issues'].get('by_severity', {}).get('warning', 0)}")
+        console.print(
+            f"  • Critical: {quality['issues'].get('by_severity', {}).get('critical', 0)}"
+        )
+        console.print(
+            f"  • Warnings: {quality['issues'].get('by_severity', {}).get('warning', 0)}"
+        )
     else:
         console.print("  • Quality report not available")
 
@@ -135,14 +145,18 @@ def cmd_insights(args: argparse.Namespace) -> None:
     current_repo = state.get_current_repo()
 
     if not current_repo:
-        console.print("[red]Error: No repository context. Run 'yaver status' to set context.[/red]")
+        console.print(
+            "[red]Error: No repository context. Run 'yaver status' to set context.[/red]"
+        )
         return
 
     # Analyze codebase
     try:
-        analyzer = create_analyzer(current_repo.project_type or "python", 
-                                  current_repo.repo_id or "yaver",
-                                  Path(current_repo.local_path))
+        analyzer = create_analyzer(
+            current_repo.project_type or "python",
+            current_repo.repo_id or "yaver",
+            Path(current_repo.local_path),
+        )
         graph = analyzer.analyze()
         provider = CodeIntelligenceProvider(graph)
 
@@ -151,7 +165,9 @@ def cmd_insights(args: argparse.Namespace) -> None:
         insights = memory.get_insights()
 
         # Display statistics
-        stats_table = Table(title="Codebase Statistics", show_header=True, header_style="bold green")
+        stats_table = Table(
+            title="Codebase Statistics", show_header=True, header_style="bold green"
+        )
         stats_table.add_column("Metric", width=20)
         stats_table.add_column("Value", width=15)
 

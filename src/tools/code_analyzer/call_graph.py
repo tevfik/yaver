@@ -6,6 +6,7 @@ import ast
 from typing import List, Dict, Set, Optional
 from .models import FunctionInfo
 
+
 class CallGraphBuilder(ast.NodeVisitor):
     def __init__(self):
         self.calls: List[Dict[str, str]] = []  # List of {caller, callee}
@@ -35,11 +36,11 @@ class CallGraphBuilder(ast.NodeVisitor):
 
     def _handle_function(self, node):
         prev_func = self.current_function
-        
+
         func_name = node.name
         if self.current_class:
             func_name = f"{self.current_class}.{func_name}"
-            
+
         self.current_function = func_name
         self.generic_visit(node)
         self.current_function = prev_func
@@ -50,18 +51,20 @@ class CallGraphBuilder(ast.NodeVisitor):
             caller = "<module>"
         else:
             caller = self.current_function
-            
+
         callee_name, confidence, is_dynamic = self._get_func_name_info(node.func)
-        
+
         if callee_name:
-            self.calls.append({
-                "caller": caller,
-                "callee": callee_name,
-                "line": node.lineno,
-                "confidence": confidence,
-                "is_dynamic": is_dynamic
-            })
-            
+            self.calls.append(
+                {
+                    "caller": caller,
+                    "callee": callee_name,
+                    "line": node.lineno,
+                    "confidence": confidence,
+                    "is_dynamic": is_dynamic,
+                }
+            )
+
         self.generic_visit(node)
 
     def _get_func_name_info(self, node) -> tuple[Optional[str], float, bool]:
@@ -77,7 +80,7 @@ class CallGraphBuilder(ast.NodeVisitor):
             if value:
                 return f"{value}.{node.attr}", conf, dyn
             return node.attr, 1.0, False
-        
+
         # Dynamic handling start
         elif isinstance(node, ast.Call):
             # e.g. get_handler().process() - we can't be sure what get_handler returns
@@ -86,11 +89,10 @@ class CallGraphBuilder(ast.NodeVisitor):
             if name:
                 return f"{name}(...).Result", 0.5, True
         # Dynamic handling end
-            
+
         return None, 0.0, False
 
     def _get_func_name(self, node) -> Optional[str]:
         # Legacy Wrapper
         name, _, _ = self._get_func_name_info(node)
         return name
-

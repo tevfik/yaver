@@ -47,6 +47,7 @@ class YaverSetupWizard:
         """Fetch available models from Ollama server"""
         try:
             import requests
+
             response = requests.get(f"{url}/api/tags", timeout=3, auth=auth)
             if response.status_code == 200:
                 data = response.json()
@@ -82,23 +83,26 @@ class YaverSetupWizard:
         print("Make sure Ollama is running: ollama serve\n")
 
         while True:
-            url = self.input_with_default(
-                "Ollama server URL", "http://localhost:11434"
-            )
+            url = self.input_with_default("Ollama server URL", "http://localhost:11434")
             if self.validate_url(url):
                 break
             print("❌ Please provide a valid URL (http://... or https://...)\n")
 
         # Ask about authentication (optional)
         print("\n🔐 Does your Ollama server require authentication?")
-        use_auth = self.input_with_default("Use basic authentication? (y/n)", "n").lower() == "y"
-        
+        use_auth = (
+            self.input_with_default("Use basic authentication? (y/n)", "n").lower()
+            == "y"
+        )
+
         config = {"OLLAMA_BASE_URL": url}
         auth = None
-        
+
         if use_auth:
             username = self.input_with_default("Ollama username", "")
-            password = self.input_with_default("Ollama password (will be saved in .env)", "")
+            password = self.input_with_default(
+                "Ollama password (will be saved in .env)", ""
+            )
             if username and password:
                 config["OLLAMA_USERNAME"] = username
                 config["OLLAMA_PASSWORD"] = password
@@ -111,32 +115,44 @@ class YaverSetupWizard:
 
         if models:
             print(f"\n✅ Found {len(models)} available models\n")
-            
+
             # Ask which model roles to configure
             print("📋 Model Roles Available:")
             print("  1. General Purpose (chat, reasoning, default)")
             print("  2. Code Specialist (code generation, analysis)")
             print("  3. Tool Calling (function calling, structured output)")
             print("  4. Embedding (RAG, semantic search)\n")
-            
+
             roles_input = self.input_with_default(
                 "Select roles to configure (comma-separated, e.g., 1,2,4)", "1"
             )
-            
+
             role_map = {
-                "1": ("OLLAMA_MODEL_GENERAL", "General Purpose LLM", "for chat and reasoning"),
-                "2": ("OLLAMA_MODEL_CODE", "Code Specialist LLM", "for code generation"),
+                "1": (
+                    "OLLAMA_MODEL_GENERAL",
+                    "General Purpose LLM",
+                    "for chat and reasoning",
+                ),
+                "2": (
+                    "OLLAMA_MODEL_CODE",
+                    "Code Specialist LLM",
+                    "for code generation",
+                ),
                 "3": ("OLLAMA_MODEL_TOOL", "Tool Calling LLM", "for function calling"),
-                "4": ("OLLAMA_MODEL_EMBEDDING", "Embedding Model", "for RAG/semantic search"),
+                "4": (
+                    "OLLAMA_MODEL_EMBEDDING",
+                    "Embedding Model",
+                    "for RAG/semantic search",
+                ),
             }
-            
+
             for role_num in roles_input.split(","):
                 role_num = role_num.strip()
                 if role_num in role_map:
                     config_key, role_name, description = role_map[role_num]
                     model = self.select_model_role(models, role_name, description)
                     config[config_key] = model
-            
+
             # Default: if no roles selected, use first model for general purpose
             if "OLLAMA_MODEL_GENERAL" not in config:
                 config["OLLAMA_MODEL_GENERAL"] = models[0]
@@ -144,7 +160,8 @@ class YaverSetupWizard:
             print("\n⚠️  Could not fetch models from Ollama server.")
             print("   Make sure Ollama is running at the URL you provided.\n")
             model = self.input_with_default(
-                "Enter model name manually (mistral, llama2, neural-chat, etc)", "mistral"
+                "Enter model name manually (mistral, llama2, neural-chat, etc)",
+                "mistral",
             )
             config["OLLAMA_MODEL_GENERAL"] = model
 
@@ -155,19 +172,25 @@ class YaverSetupWizard:
         self.print_section("Memory Configuration (Vector Database)")
         print("Yaver uses vector database for semantic memory.")
         print("Options:")
-        print("  1. Qdrant (Standard): Robust, feature-rich vector database (Requires Docker)")
-        print("  2. LEANN (Experimental): Lightweight, local, Python-native (No Docker required)")
-        print("  3. ChromaDB (Local): Persistent local vector database (No Docker required)\n")
+        print(
+            "  1. Qdrant (Standard): Robust, feature-rich vector database (Requires Docker)"
+        )
+        print(
+            "  2. LEANN (Experimental): Lightweight, local, Python-native (No Docker required)"
+        )
+        print(
+            "  3. ChromaDB (Local): Persistent local vector database (No Docker required)\n"
+        )
 
         mem_choice = self.input_with_default("Select Memory Type (1, 2 or 3)", "1")
-        
+
         if mem_choice == "2":
             print("\n✅ Selected LEANN (Local Efficient ANN)")
             return {"MEMORY_TYPE": "leann"}
         elif mem_choice == "3":
             print("\n✅ Selected ChromaDB (Local Persistent Storage)")
             return {"MEMORY_TYPE": "chroma"}
-        
+
         # Qdrant Setup
         print("\nConfiguring Qdrant...")
         print("Options:")
@@ -175,7 +198,7 @@ class YaverSetupWizard:
         print("  2. Cloud: Uses Qdrant Cloud service\n")
 
         choice = self.input_with_default("Choice (1 or 2)", "1")
-        
+
         base_config = {"MEMORY_TYPE": "qdrant"}
 
         if choice == "2":
@@ -184,15 +207,19 @@ class YaverSetupWizard:
                 "https://xxx-x-y-z-xxxxx.eu-central1-0.qdb.cloud",
             )
             api_key = self.input_with_default("Qdrant API Key (keep it secret!)")
-            base_config.update({
-                "QDRANT_URL": url,
-                "QDRANT_API_KEY": api_key,
-                "QDRANT_MODE": "cloud",
-            })
+            base_config.update(
+                {
+                    "QDRANT_URL": url,
+                    "QDRANT_API_KEY": api_key,
+                    "QDRANT_MODE": "cloud",
+                }
+            )
         else:
-            url = self.input_with_default("Qdrant local server URL", "http://localhost:6333")
+            url = self.input_with_default(
+                "Qdrant local server URL", "http://localhost:6333"
+            )
             base_config.update({"QDRANT_URL": url, "QDRANT_MODE": "local"})
-            
+
         return base_config
 
     def setup_neo4j(self) -> Dict:
@@ -239,11 +266,11 @@ class YaverSetupWizard:
 
         # Git settings
         print("GitHub Integration (optional - for analyzing repositories):")
-        use_github = (
-            self.input_with_default("Enable GitHub (y/n)", "n").lower() == "y"
-        )
+        use_github = self.input_with_default("Enable GitHub (y/n)", "n").lower() == "y"
         if use_github:
-            gh_token = self.input_with_default("GitHub Personal Access Token (optional)")
+            gh_token = self.input_with_default(
+                "GitHub Personal Access Token (optional)"
+            )
             if gh_token:
                 config["GITHUB_TOKEN"] = gh_token
 
@@ -289,8 +316,12 @@ class YaverSetupWizard:
                 json.dump(config, f, indent=2)
 
             print(f"\n✅ Configuration files saved:")
-            print(f"   .env file: {self.env_file.relative_to(self.env_file.parent.parent)}")
-            print(f"   JSON file: {self.config_file.relative_to(self.config_file.parent.parent)}")
+            print(
+                f"   .env file: {self.env_file.relative_to(self.env_file.parent.parent)}"
+            )
+            print(
+                f"   JSON file: {self.config_file.relative_to(self.config_file.parent.parent)}"
+            )
 
             return True
         except Exception as e:
@@ -333,8 +364,9 @@ class YaverSetupWizard:
                     print(f"    • {k}: {display_v}")
 
         # Show optional
-        optional_keys = [k for k in config.keys() 
-                        if not any(k in v for v in categories.values())]
+        optional_keys = [
+            k for k in config.keys() if not any(k in v for v in categories.values())
+        ]
         if optional_keys:
             print(f"\n  ⚙️  Optional Settings")
             for k in optional_keys:
@@ -345,7 +377,7 @@ class YaverSetupWizard:
         print("  1. Start services: docker-compose up -d (in docker/ directory)")
         print("  2. Run: yaver status")
         print("  3. Try: yaver chat\n")
-        
+
         # Offer Docker setup
         print("Optional:")
         print("  • Start Docker: yaver docker start")
@@ -360,9 +392,7 @@ class YaverSetupWizard:
         existing = self.load_existing_config()
         if existing and not skip_intro:
             print("📦 Configuration already exists!")
-            modify = (
-                self.input_with_default("Reconfigure (y/n)", "n").lower() == "y"
-            )
+            modify = self.input_with_default("Reconfigure (y/n)", "n").lower() == "y"
             if not modify:
                 return existing
 
@@ -407,7 +437,7 @@ def check_and_setup_if_needed():
                     line = line.strip()
                     if line and not line.startswith("#") and "=" in line:
                         key, value = line.split("=", 1)
-                        config[key.strip()] = value.strip().strip('"\'')
+                        config[key.strip()] = value.strip().strip("\"'")
             if config:
                 # Save as JSON for next time
                 with open(wizard.config_file, "w") as f:

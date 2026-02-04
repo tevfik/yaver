@@ -17,6 +17,7 @@ from config.config import QdrantConfig
 
 logger = logging.getLogger(__name__)
 
+
 class QdrantAdapter:
     """
     Adapter for Qdrant Vector Database.
@@ -39,13 +40,17 @@ class QdrantAdapter:
         try:
             if self.config.use_local:
                 if self.config.path:
-                    logger.info(f"Connecting to local Qdrant at path: {self.config.path}")
+                    logger.info(
+                        f"Connecting to local Qdrant at path: {self.config.path}"
+                    )
                     self.client = QdrantClient(path=self.config.path)
                 else:
                     logger.info("Connecting to in-memory Qdrant")
                     self.client = QdrantClient(location=":memory:")
             else:
-                logger.info(f"Connecting to Qdrant server at {self.config.host}:{self.config.port}")
+                logger.info(
+                    f"Connecting to Qdrant server at {self.config.host}:{self.config.port}"
+                )
                 self.client = QdrantClient(
                     host=self.config.host,
                     port=self.config.port,
@@ -67,16 +72,19 @@ class QdrantAdapter:
 
         try:
             collections = self.client.get_collections()
-            exists = any(c.name == self.collection_name for c in collections.collections)
+            exists = any(
+                c.name == self.collection_name for c in collections.collections
+            )
 
             if not exists:
-                logger.info(f"Creating collection '{self.collection_name}' with size {vector_size}")
+                logger.info(
+                    f"Creating collection '{self.collection_name}' with size {vector_size}"
+                )
                 self.client.create_collection(
                     collection_name=self.collection_name,
                     vectors_config=models.VectorParams(
-                        size=vector_size,
-                        distance=models.Distance.COSINE
-                    )
+                        size=vector_size, distance=models.Distance.COSINE
+                    ),
                 )
             else:
                 logger.debug(f"Collection '{self.collection_name}' already exists")
@@ -96,45 +104,46 @@ class QdrantAdapter:
             return
 
         # Ensure collection exists based on first item's embedding size
-        vector_size = len(items[0]['embedding'])
+        vector_size = len(items[0]["embedding"])
         self.ensure_collection(vector_size)
 
         points = []
         for item in items:
-            embedding = item.get('embedding')
+            embedding = item.get("embedding")
             if not embedding:
                 continue
-            
+
             # Generate UUID from string ID if present, or random UUID
             # Use UUID5 for deterministic UUID generation from string IDs
-            item_id = item.get('id')
+            item_id = item.get("id")
             if item_id:
                 # Create deterministic UUID from string ID (e.g., "file.py::function")
                 point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(item_id)))
             else:
                 point_id = str(uuid.uuid4())
-            
+
             # Separate payload from embedding (exclude 'id' and 'embedding')
-            payload = {k: v for k, v in item.items() if k not in ['embedding', 'id']}
-            
-            points.append(models.PointStruct(
-                id=point_id,
-                vector=embedding,
-                payload=payload
-            ))
+            payload = {k: v for k, v in item.items() if k not in ["embedding", "id"]}
+
+            points.append(
+                models.PointStruct(id=point_id, vector=embedding, payload=payload)
+            )
 
         if points:
             try:
-                self.client.upsert(
-                    collection_name=self.collection_name,
-                    points=points
-                )
+                self.client.upsert(collection_name=self.collection_name, points=points)
                 logger.info(f"Stored {len(points)} vectors in {self.collection_name}")
             except Exception as e:
                 logger.error(f"Failed to upsert points: {e}")
                 raise
 
-    def search(self, query_vector: List[float], limit: int = 5, score_threshold: float = 0.0, query_filter = None) -> List[Dict[str, Any]]:
+    def search(
+        self,
+        query_vector: List[float],
+        limit: int = 5,
+        score_threshold: float = 0.0,
+        query_filter=None,
+    ) -> List[Dict[str, Any]]:
         """
         Search for similar code snippets.
 
@@ -157,16 +166,14 @@ class QdrantAdapter:
                 query=query_vector,
                 limit=limit,
                 score_threshold=score_threshold,
-                query_filter=query_filter
+                query_filter=query_filter,
             )
 
             results = []
             for hit in search_result.points:
-                results.append({
-                    "id": hit.id,
-                    "score": hit.score,
-                    "payload": hit.payload
-                })
+                results.append(
+                    {"id": hit.id, "score": hit.score, "payload": hit.payload}
+                )
             return results
         except UnexpectedResponse as e:
             # If collection doesn't exist, return empty
@@ -186,7 +193,7 @@ class QdrantAdapter:
     def delete_by_filter(self, filter_key: str, filter_value: Any):
         """
         Delete points where filter_key == filter_value.
-        
+
         Args:
             filter_key: The payload key to filter by (e.g., "session_id")
             filter_value: The value to match

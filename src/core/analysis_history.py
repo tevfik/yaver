@@ -31,7 +31,8 @@ class AnalysisHistory:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS project_analyses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 project_id TEXT NOT NULL,
@@ -44,15 +45,20 @@ class AnalysisHistory:
                 status TEXT DEFAULT 'success',
                 UNIQUE(project_id, commit_hash)
             )
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_project_id ON project_analyses(project_id)
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_commit_hash ON project_analyses(commit_hash)
-        """)
+        """
+        )
 
         conn.commit()
         conn.close()
@@ -74,8 +80,8 @@ class AnalysisHistory:
         try:
             cursor.execute(
                 """
-                INSERT INTO project_analyses 
-                (project_id, repo_path, commit_hash, analysis_timestamp, 
+                INSERT INTO project_analyses
+                (project_id, repo_path, commit_hash, analysis_timestamp,
                  files_count, analysis_type, changed_files, status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -189,7 +195,9 @@ class AnalysisHistory:
             )
         else:
             # No analyses to keep, delete all
-            cursor.execute("DELETE FROM project_analyses WHERE project_id = ?", (project_id,))
+            cursor.execute(
+                "DELETE FROM project_analyses WHERE project_id = ?", (project_id,)
+            )
 
         deleted = cursor.rowcount
         conn.commit()
@@ -203,7 +211,9 @@ class AnalysisHistory:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        cursor.execute("DELETE FROM project_analyses WHERE project_id = ?", (project_id,))
+        cursor.execute(
+            "DELETE FROM project_analyses WHERE project_id = ?", (project_id,)
+        )
         deleted = cursor.rowcount
         conn.commit()
         conn.close()

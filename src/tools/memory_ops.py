@@ -11,20 +11,21 @@ from agent_base import FileAnalysis, logger
 from agent_memory import MemoryManager, MemoryType
 from agent_graph import GraphManager
 
+
 def ingest_repository(
     repo_name: str,
     repo_path: str,
     file_analyses: List[FileAnalysis],
-    code_structure: List[Dict[str, Any]]
+    code_structure: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
     """
     Ingest repository metadata and structure into both Memory Systems.
-    
+
     1. Vector DB (Qdrant): Stores semantic embeddings of files and functions.
     2. Graph DB (Neo4j): Stores structural relationships (File -> Class -> Function).
     """
     stats = {"qdrant": 0, "neo4j": 0, "errors": []}
-    
+
     # 1. Initialize Managers
     try:
         mem_mgr = MemoryManager()
@@ -41,21 +42,21 @@ def ingest_repository(
             for item in code_structure:
                 # 'item' comes from CodeParser.parse_file
                 # expected keys: file, classes=[], functions=[]
-                file_path = item.get('file')
+                file_path = item.get("file")
                 if file_path:
-                    # Sync with file analysis to get LOC/Lang if possible, 
-                    # but CodeParser might not have it. GraphManager.store_file_node 
+                    # Sync with file analysis to get LOC/Lang if possible,
+                    # but CodeParser might not have it. GraphManager.store_file_node
                     # is usually better called with full analysis data.
                     graph_mgr.store_code_structure(file_path, repo_name, item)
                     stats["neo4j"] += 1
-            
+
             # B. Store File Nodes (Metadata)
             for file in file_analyses:
                 graph_mgr.store_file_node(
                     file_path=file.file_path,
                     repo_name=repo_name,
                     language=file.language,
-                    loc=file.lines_of_code
+                    loc=file.lines_of_code,
                 )
         except Exception as e:
             msg = f"Graph ingestion error: {e}"
@@ -76,7 +77,7 @@ def ingest_repository(
             Complexity: {file.complexity}
             Security Issues: {len(file.security_issues)}
             """
-            
+
             # Add to Qdrant
             mem_mgr.add_memory(
                 content=content_snippet,
@@ -84,11 +85,11 @@ def ingest_repository(
                 metadata={
                     "repo": repo_name,
                     "path": file.file_path,
-                    "type": "file_summary"
-                }
+                    "type": "file_summary",
+                },
             )
             stats["qdrant"] += 1
-            
+
     except Exception as e:
         msg = f"Vector ingestion error: {e}"
         logger.error(msg)
@@ -96,19 +97,19 @@ def ingest_repository(
 
     # 4. Cleanup
     graph_mgr.close()
-    
+
     return stats
 
 
 def retrieve_project_insights(repo_name: str) -> str:
     """
     Retrieve architectural insights from Memory Systems (RAG).
-    
+
     1. Neo4j: Find 'God Classes' (Hubs) and central components.
     2. Qdrant: Find complex or critical code patterns.
     """
     insights = ["\n[Memory Augmented Insights]"]
-    
+
     # 1. Graph Insights (Neo4j)
     graph_mgr = GraphManager()
     if graph_mgr.driver:
@@ -130,16 +131,20 @@ def retrieve_project_insights(repo_name: str) -> str:
                 result = session.run(query, repo_name=repo_name)
                 hubs = []
                 for r in result:
-                    identifier = r['symbol'] if r['symbol'] else r['file']
+                    identifier = r["symbol"] if r["symbol"] else r["file"]
                     if identifier:
-                        hubs.append(f"- {r['type']} '{identifier}': {r['degree']} connections (Central Component)")
-                
+                        hubs.append(
+                            f"- {r['type']} '{identifier}': {r['degree']} connections (Central Component)"
+                        )
+
                 if hubs:
                     insights.append("\n**Structural Hubs (GraphDB):**")
                     insights.extend(hubs)
                 else:
-                    insights.append("\n**Structural Hubs:** None detected (Graph might be sparse).")
-                    
+                    insights.append(
+                        "\n**Structural Hubs:** None detected (Graph might be sparse)."
+                    )
+
         except Exception as e:
             logger.error(f"Graph retrieval failed: {e}")
             insights.append(f"\nGraph Retrieval Error: {e}")
@@ -158,18 +163,17 @@ def retrieve_project_insights(repo_name: str) -> str:
             query="high complexity security vulnerability",
             memory_type=MemoryType.CODE_PATTERN,
             limit=3,
-            metadata_filter=filter_criteria
+            metadata_filter=filter_criteria,
         )
-        
+
         if results:
             insights.append("\n**Semantic Hotspots (VectorDB):**")
             for res in results:
                 # We extract the path from metadata if available
-                path = res.get('metadata', {}).get('path', 'unknown')
+                path = res.get("metadata", {}).get("path", "unknown")
                 insights.append(f"- {path} (Matches query 'complexity/security')")
-                
+
     except Exception as e:
         logger.error(f"Vector retrieval failed: {e}")
 
     return "\n".join(insights)
-

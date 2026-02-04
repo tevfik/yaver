@@ -8,11 +8,12 @@ from .config import get_config
 
 logger = logging.getLogger("yaver_cli")
 
+
 class YaverClient:
     def __init__(self):
         self.config = get_config()
-        self.base_url = "http://localhost:8080/api" # Default 
-        
+        self.base_url = "http://localhost:8080/api"  # Default
+
     def add_comment(self, task_id: str, content: str, author: str = "Yaver Agent"):
         """Add a comment to a task"""
         # For now, just log it if backend is not reachable or just mock it

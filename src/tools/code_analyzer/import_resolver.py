@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Dict
 from .models import ImportInfo
 
+
 class ImportResolver:
     def __init__(self, repo_root: Path):
         self.repo_root = repo_root
@@ -28,10 +29,10 @@ class ImportResolver:
                         # src/tools/analyzer.py -> src.tools.analyzer
                         # __init__.py files represent the parent package
                         parts = list(rel_path.with_suffix("").parts)
-                        
+
                         if parts[-1] == "__init__":
                             parts = parts[:-1]
-                        
+
                         module_name = ".".join(parts)
                         self.module_map[module_name] = rel_path
                     except ValueError:
@@ -48,7 +49,7 @@ class ImportResolver:
 
         # 2. Handle Absolute Imports
         return self._resolve_absolute(imp.module)
-    
+
     def _resolve_absolute(self, module_name: str) -> Optional[Path]:
         """
         Tries to find the module in the internal map.
@@ -56,11 +57,11 @@ class ImportResolver:
         """
         if not module_name:
             return None
-            
+
         # Exact match
         if module_name in self.module_map:
             return self.module_map[module_name]
-            
+
         # Check if it imports a class/function from a module
         # e.g. from tools.models import User -> tools.models might be the file
         parts = module_name.split(".")
@@ -69,7 +70,7 @@ class ImportResolver:
             if partial_name in self.module_map:
                 return self.module_map[partial_name]
             parts.pop()
-            
+
         return None
 
     def _resolve_relative(self, imp: ImportInfo, current_file: Path) -> Optional[Path]:
@@ -80,14 +81,14 @@ class ImportResolver:
         try:
             # Current package path
             current_pkg = current_file.parent.relative_to(self.repo_root)
-            
+
             # Go up (level - 1) times
             # from . import x -> level 1 -> stay in same dir
             # from .. import x -> level 2 -> go up 1 dir
             target_pkg = current_pkg
             for _ in range(imp.level - 1):
                 target_pkg = target_pkg.parent
-            
+
             # Consturct target module name
             if imp.module:
                 target_module_parts = list(target_pkg.parts) + imp.module.split(".")
@@ -98,17 +99,17 @@ class ImportResolver:
                 target_module_parts = list(target_pkg.parts)
 
             target_module_name = ".".join(target_module_parts)
-            
+
             # Check map
             if target_module_name in self.module_map:
                 return self.module_map[target_module_name]
-                
+
             # Try appending the first name from 'names' if module was None
             # e.g. from . import utils -> utils might be the file
             if not imp.module and imp.names:
-                 potential_name = f"{target_module_name}.{imp.names[0]}"
-                 if potential_name in self.module_map:
-                     return self.module_map[potential_name]
+                potential_name = f"{target_module_name}.{imp.names[0]}"
+                if potential_name in self.module_map:
+                    return self.module_map[potential_name]
 
             return None
 

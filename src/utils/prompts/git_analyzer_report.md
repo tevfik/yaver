@@ -70,6 +70,3 @@ Generate a software architecture report.
 
 **User Request:**
 {user_request}
-
-
-

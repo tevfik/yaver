@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class IssueType(str, Enum):
     """Types of code quality issues."""
+
     GOD_CLASS = "god_class"  # Class with too many responsibilities
     CIRCULAR_DEPENDENCY = "circular_dependency"
     DEAD_CODE = "dead_code"  # Unreachable or unused function
@@ -31,6 +32,7 @@ class IssueType(str, Enum):
 @dataclass
 class IssueNode(CodeNode):
     """Code quality issue found during analysis."""
+
     issue_type: IssueType = IssueType.GOD_CLASS
     severity: str = "info"  # "critical", "warning", "info"
     description: str = ""
@@ -45,6 +47,7 @@ class IssueNode(CodeNode):
 @dataclass
 class RippleEffect:
     """Result of ripple effect analysis."""
+
     function_id: str
     affected_functions: List[str]  # Functions that would be affected
     severity: str  # "critical", "high", "medium", "low"
@@ -55,6 +58,7 @@ class RippleEffect:
 @dataclass
 class DependencyChain:
     """Result of dependency chain analysis."""
+
     source_id: str
     target_id: str
     path: List[str]  # Node IDs in path
@@ -65,6 +69,7 @@ class DependencyChain:
 @dataclass
 class CriticalPath:
     """Result of critical path analysis."""
+
     function_id: str
     importance_score: float  # 0.0 to 1.0
     call_count: int  # Number of functions that call this
@@ -81,11 +86,11 @@ class RippleEffectAnalyzer:
     def analyze(self, function_id: str, depth: int = 3) -> RippleEffect:
         """
         Analyze what functions would be affected if this function changes.
-        
+
         Args:
             function_id: The function to analyze
             depth: How many levels deep to traverse
-            
+
         Returns:
             RippleEffect with affected functions and severity
         """
@@ -146,11 +151,11 @@ class DependencyChainAnalyzer:
     def find_path(self, source_id: str, target_id: str) -> Optional[DependencyChain]:
         """
         Find shortest path of dependencies between two functions.
-        
+
         Args:
             source_id: Starting function
             target_id: Target function
-            
+
         Returns:
             DependencyChain with path and distance, or None if no path
         """
@@ -187,7 +192,7 @@ class DependencyChainAnalyzer:
     def detect_circular_dependencies(self) -> List[DependencyChain]:
         """
         Detect circular dependency chains.
-        
+
         Returns:
             List of circular dependency chains
         """
@@ -201,18 +206,25 @@ class DependencyChainAnalyzer:
             # DFS to detect cycle
             path = self._dfs_cycle_detection(node_id, visited)
             if path:
-                cycles.append(DependencyChain(
-                    source_id=path[0],
-                    target_id=path[-1],
-                    path=path,
-                    distance=len(path),
-                    has_circular=True,
-                ))
+                cycles.append(
+                    DependencyChain(
+                        source_id=path[0],
+                        target_id=path[-1],
+                        path=path,
+                        distance=len(path),
+                        has_circular=True,
+                    )
+                )
 
         return cycles
 
-    def _dfs_cycle_detection(self, node_id: str, visited: Set[str], 
-                             path: List[str] = None, rec_stack: Set[str] = None) -> Optional[List[str]]:
+    def _dfs_cycle_detection(
+        self,
+        node_id: str,
+        visited: Set[str],
+        path: List[str] = None,
+        rec_stack: Set[str] = None,
+    ) -> Optional[List[str]]:
         """DFS to detect cycles."""
         if path is None:
             path = []
@@ -228,7 +240,9 @@ class DependencyChainAnalyzer:
             for edge in outgoing:
                 next_id = edge.target_id
                 if next_id not in visited:
-                    cycle = self._dfs_cycle_detection(next_id, visited, path.copy(), rec_stack.copy())
+                    cycle = self._dfs_cycle_detection(
+                        next_id, visited, path.copy(), rec_stack.copy()
+                    )
                     if cycle:
                         return cycle
                 elif next_id in rec_stack:
@@ -247,10 +261,10 @@ class CriticalPathAnalyzer:
     def analyze_criticality(self, top_n: int = 10) -> List[CriticalPath]:
         """
         Identify most critical functions using PageRank-like scoring.
-        
+
         Args:
             top_n: Number of top critical functions to return
-            
+
         Returns:
             List of CriticalPath objects sorted by importance
         """
@@ -259,7 +273,8 @@ class CriticalPathAnalyzer:
 
         # Get functions only (not files, classes, etc.)
         function_nodes = [
-            node_id for node_id in self.graph.nodes
+            node_id
+            for node_id in self.graph.nodes
             if self.graph.nodes[node_id].element_type == CodeElementType.FUNCTION
         ]
 
@@ -267,17 +282,19 @@ class CriticalPathAnalyzer:
         for node_id in function_nodes:
             score = scores.get(node_id, 0.0)
             call_count = len(self.graph.get_edges_to(node_id, EdgeType.CALLS))
-            
+
             is_critical = score > 0.5  # Threshold
             suggestion = self._get_suggestion(node_id, score, call_count)
 
-            critical_paths.append(CriticalPath(
-                function_id=node_id,
-                importance_score=score,
-                call_count=call_count,
-                is_critical=is_critical,
-                suggestion=suggestion,
-            ))
+            critical_paths.append(
+                CriticalPath(
+                    function_id=node_id,
+                    importance_score=score,
+                    call_count=call_count,
+                    is_critical=is_critical,
+                    suggestion=suggestion,
+                )
+            )
 
         # Sort by importance and return top N
         critical_paths.sort(key=lambda x: x.importance_score, reverse=True)
@@ -286,7 +303,7 @@ class CriticalPathAnalyzer:
     def _calculate_importance_scores(self) -> Dict[str, float]:
         """Calculate importance score for each node using iterative algorithm."""
         scores = defaultdict(float)
-        
+
         # Initialize all nodes with 1.0
         for node_id in self.graph.nodes:
             scores[node_id] = 1.0
@@ -297,7 +314,9 @@ class CriticalPathAnalyzer:
             for node_id in self.graph.nodes:
                 # Score increases based on incoming calls
                 incoming = self.graph.get_edges_to(node_id, EdgeType.CALLS)
-                new_scores[node_id] = 1.0 + sum(scores[e.source_id] / 2 for e in incoming)
+                new_scores[node_id] = 1.0 + sum(
+                    scores[e.source_id] / 2 for e in incoming
+                )
 
             scores = new_scores
 
@@ -329,7 +348,7 @@ class CodeSmellDetector:
     def detect_all_smells(self) -> List[IssueNode]:
         """
         Run all code smell detection algorithms.
-        
+
         Returns:
             List of detected issues
         """
@@ -351,7 +370,9 @@ class CodeSmellDetector:
                 continue
 
             # Count methods in class
-            contained_methods = len(self.graph.get_edges_from(node_id, EdgeType.CONTAINS))
+            contained_methods = len(
+                self.graph.get_edges_from(node_id, EdgeType.CONTAINS)
+            )
 
             if contained_methods > 15:  # Threshold
                 issue = IssueNode(
@@ -403,7 +424,7 @@ class CodeSmellDetector:
 
             # Check if function has no incoming calls
             incoming_calls = self.graph.get_edges_to(node_id, EdgeType.CALLS)
-            
+
             if not incoming_calls and node.is_public:  # Public but unused
                 issue = IssueNode(
                     id=f"issue:dead_code:{node_id}",
@@ -477,6 +498,7 @@ class CodeSmellDetector:
 
 from .impact_analyzer import ImpactAnalyzer
 
+
 class CodeIntelligenceProvider:
     """
     High-level interface for code intelligence.
@@ -498,10 +520,10 @@ class CodeIntelligenceProvider:
         """
         Get comprehensive context for working on a specific function.
         Used to inject into agent prompts.
-        
+
         Args:
             function_id: The function being worked on
-            
+
         Returns:
             Dictionary with critical context
         """
@@ -518,7 +540,9 @@ class CodeIntelligenceProvider:
 
         # Get all issues
         all_issues = self.smell_detector.detect_all_smells()
-        related_issues = [issue for issue in all_issues if function_id in issue.affected_nodes]
+        related_issues = [
+            issue for issue in all_issues if function_id in issue.affected_nodes
+        ]
 
         return {
             "function_id": function_id,
@@ -548,24 +572,28 @@ class CodeIntelligenceProvider:
     def get_code_quality_report(self) -> Dict:
         """
         Generate code quality report for entire codebase.
-        
+
         Returns:
             Dictionary with quality metrics
         """
         issues = self.smell_detector.detect_all_smells()
         critical_funcs = self.critical_analyzer.analyze_criticality(top_n=10)
-        
+
         # New: Collect top complexity functions
         top_complexity = []
         for node_id, node in self.graph.nodes.items():
             if node.element_type == CodeElementType.FUNCTION:
                 if hasattr(node, "complexity") and node.complexity > 5:
-                    top_complexity.append({
-                        "function_name": node.name,
-                        "file_path": node.file_path,
-                        "complexity": node.complexity
-                    })
-        top_complexity = sorted(top_complexity, key=lambda x: x["complexity"], reverse=True)[:10]
+                    top_complexity.append(
+                        {
+                            "function_name": node.name,
+                            "file_path": node.file_path,
+                            "complexity": node.complexity,
+                        }
+                    )
+        top_complexity = sorted(
+            top_complexity, key=lambda x: x["complexity"], reverse=True
+        )[:10]
 
         # New: Collect coupling data (Requires ImpactAnalyzer with live driver, but we are using CodeGraph here)
         # Limitation: ImpactAnalyzer needs Neo4j Driver, CodeGraph is in-memory representation.
@@ -573,7 +601,7 @@ class CodeIntelligenceProvider:
         coupling = []
         # TBD: Implement graph-based coupling if DB unavailable
         # Or better: DependencyChainAnalyzer already tracks dependencies
-        
+
         return {
             "graph_stats": self.graph.get_stats(),
             "total_issues": len(issues),
@@ -613,19 +641,29 @@ class CodeIntelligenceProvider:
 
         critical_count = len([i for i in issues if i.severity == "critical"])
         if critical_count > 0:
-            recommendations.append(f"🚨 Fix {critical_count} critical issues immediately (circular dependencies).")
+            recommendations.append(
+                f"🚨 Fix {critical_count} critical issues immediately (circular dependencies)."
+            )
 
         god_classes = len([i for i in issues if i.issue_type == IssueType.GOD_CLASS])
         if god_classes > 0:
-            recommendations.append(f"📦 Refactor {god_classes} god classes to improve maintainability.")
+            recommendations.append(
+                f"📦 Refactor {god_classes} god classes to improve maintainability."
+            )
 
         dead_code = len([i for i in issues if i.issue_type == IssueType.DEAD_CODE])
         if dead_code > 0:
-            recommendations.append(f"🗑️  Remove {dead_code} unused functions to reduce clutter.")
+            recommendations.append(
+                f"🗑️  Remove {dead_code} unused functions to reduce clutter."
+            )
 
-        high_complexity = len([i for i in issues if i.issue_type == IssueType.HIGH_COMPLEXITY])
+        high_complexity = len(
+            [i for i in issues if i.issue_type == IssueType.HIGH_COMPLEXITY]
+        )
         if high_complexity > 0:
-            recommendations.append(f"⚡ Simplify {high_complexity} high-complexity functions.")
+            recommendations.append(
+                f"⚡ Simplify {high_complexity} high-complexity functions."
+            )
 
         if not recommendations:
             recommendations.append("✅ Codebase quality looks good!")

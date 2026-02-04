@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class CodeElementType(str, Enum):
     """Types of code elements in the graph."""
+
     FILE = "File"
     MODULE = "Module"
     CLASS = "Class"
@@ -33,6 +34,7 @@ class CodeElementType(str, Enum):
 
 class EdgeType(str, Enum):
     """Types of relationships between code elements."""
+
     CALLS = "CALLS"
     READS = "READS"
     WRITES = "WRITES"
@@ -49,6 +51,7 @@ class EdgeType(str, Enum):
 @dataclass
 class CodeNode:
     """Represents a node in the code graph."""
+
     id: str
     name: str
     element_type: CodeElementType
@@ -83,6 +86,7 @@ class CodeNode:
 @dataclass
 class CodeEdge:
     """Represents an edge (relationship) in the code graph."""
+
     source_id: str
     target_id: str
     edge_type: EdgeType
@@ -103,6 +107,7 @@ class CodeEdge:
 @dataclass
 class CodeGraph:
     """Complete graph representation of a codebase."""
+
     project_name: str
     root_path: Path
     nodes: Dict[str, CodeNode] = field(default_factory=dict)
@@ -127,14 +132,18 @@ class CodeGraph:
         """Retrieve a node by ID."""
         return self.nodes.get(node_id)
 
-    def get_edges_from(self, node_id: str, edge_type: Optional[EdgeType] = None) -> List[CodeEdge]:
+    def get_edges_from(
+        self, node_id: str, edge_type: Optional[EdgeType] = None
+    ) -> List[CodeEdge]:
         """Get all outgoing edges from a node."""
         edges = [e for e in self.edges if e.source_id == node_id]
         if edge_type:
             edges = [e for e in edges if e.edge_type == edge_type]
         return edges
 
-    def get_edges_to(self, node_id: str, edge_type: Optional[EdgeType] = None) -> List[CodeEdge]:
+    def get_edges_to(
+        self, node_id: str, edge_type: Optional[EdgeType] = None
+    ) -> List[CodeEdge]:
         """Get all incoming edges to a node."""
         edges = [e for e in self.edges if e.target_id == node_id]
         if edge_type:
@@ -146,9 +155,27 @@ class CodeGraph:
         return {
             "node_count": len(self.nodes),
             "edge_count": len(self.edges),
-            "files": len([n for n in self.nodes.values() if n.element_type == CodeElementType.FILE]),
-            "classes": len([n for n in self.nodes.values() if n.element_type == CodeElementType.CLASS]),
-            "functions": len([n for n in self.nodes.values() if n.element_type == CodeElementType.FUNCTION]),
+            "files": len(
+                [
+                    n
+                    for n in self.nodes.values()
+                    if n.element_type == CodeElementType.FILE
+                ]
+            ),
+            "classes": len(
+                [
+                    n
+                    for n in self.nodes.values()
+                    if n.element_type == CodeElementType.CLASS
+                ]
+            ),
+            "functions": len(
+                [
+                    n
+                    for n in self.nodes.values()
+                    if n.element_type == CodeElementType.FUNCTION
+                ]
+            ),
             "total_loc": sum(n.lines_of_code for n in self.nodes.values()),
         }
 
@@ -174,13 +201,15 @@ class PythonCodeAnalyzer:
         for py_file in py_files:
             self._analyze_file(py_file)
 
-        logger.info(f"Analysis complete: {len(self.graph.nodes)} nodes, {len(self.graph.edges)} edges")
+        logger.info(
+            f"Analysis complete: {len(self.graph.nodes)} nodes, {len(self.graph.edges)} edges"
+        )
         return self.graph
 
     def _analyze_file(self, file_path: Path) -> None:
         """Analyze a single Python file."""
         try:
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
 
             tree = ast.parse(content)
@@ -193,7 +222,7 @@ class PythonCodeAnalyzer:
                 name=file_path.name,
                 element_type=CodeElementType.FILE,
                 file_path=self.current_file,
-                lines_of_code=len(content.split('\n')),
+                lines_of_code=len(content.split("\n")),
             )
             self.graph.add_node(file_node)
 
@@ -207,7 +236,9 @@ class PythonCodeAnalyzer:
     def _walk_ast(self, node: ast.AST, parent_id: str) -> None:
         """Recursively walk AST tree."""
         for child in ast.walk(node):
-            if isinstance(child, ast.FunctionDef) or isinstance(child, ast.AsyncFunctionDef):
+            if isinstance(child, ast.FunctionDef) or isinstance(
+                child, ast.AsyncFunctionDef
+            ):
                 self._process_function(child, parent_id)
             elif isinstance(child, ast.ClassDef):
                 self._process_class(child, parent_id)
@@ -218,7 +249,7 @@ class PythonCodeAnalyzer:
         """Process function definition."""
         func_id = f"func:{self.current_file}:{node.name}"
         signature = self._get_function_signature(node)
-        
+
         func_node = CodeNode(
             id=func_id,
             name=node.name,
@@ -242,7 +273,7 @@ class PythonCodeAnalyzer:
     def _process_class(self, node: ast.ClassDef, parent_id: str) -> None:
         """Process class definition."""
         class_id = f"class:{self.current_file}:{node.name}"
-        
+
         class_node = CodeNode(
             id=class_id,
             name=node.name,
@@ -263,9 +294,7 @@ class PythonCodeAnalyzer:
         for base in node.bases:
             base_name = ast.unparse(base)
             inherits_edge = CodeEdge(
-                class_id,
-                f"class:{self.current_file}:{base_name}",
-                EdgeType.INHERITS
+                class_id, f"class:{self.current_file}:{base_name}", EdgeType.INHERITS
             )
             self.graph.add_edge(inherits_edge)
 
@@ -274,7 +303,9 @@ class PythonCodeAnalyzer:
             if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 self._process_function(item, class_id)
 
-    def _process_import(self, node: ast.Import | ast.ImportFrom, parent_id: str) -> None:
+    def _process_import(
+        self, node: ast.Import | ast.ImportFrom, parent_id: str
+    ) -> None:
         """Process import statement."""
         if isinstance(node, ast.ImportFrom):
             module_name = node.module or ""
@@ -313,7 +344,7 @@ class PythonCodeAnalyzer:
 
 class GoCodeAnalyzer:
     """Placeholder for Go code analysis."""
-    
+
     def __init__(self, project_name: str, root_path: Path):
         self.project_name = project_name
         self.root_path = Path(root_path)
@@ -326,7 +357,7 @@ class GoCodeAnalyzer:
 
 class RustCodeAnalyzer:
     """Placeholder for Rust code analysis."""
-    
+
     def __init__(self, project_name: str, root_path: Path):
         self.project_name = project_name
         self.root_path = Path(root_path)

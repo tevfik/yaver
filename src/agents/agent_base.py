@@ -17,8 +17,10 @@ from rich.logging import RichHandler
 
 from config.onboarding import get_config as get_config_dict
 
+
 class ConfigWrapper:
     """Convert dict config to object with attribute access"""
+
     def __init__(self, data):
         if isinstance(data, dict):
             for key, value in data.items():
@@ -27,7 +29,8 @@ class ConfigWrapper:
                 else:
                     setattr(self, key, value)
         else:
-            self.__dict__ = data.__dict__ if hasattr(data, '__dict__') else {}
+            self.__dict__ = data.__dict__ if hasattr(data, "__dict__") else {}
+
 
 def get_config():
     """Get config wrapped for attribute access"""
@@ -38,10 +41,16 @@ def get_config():
         return config_dict
     except Exception as e:
         # Fallback: return minimal config
-        minimal = ConfigWrapper({
-            'logging': {'log_level': 'INFO', 'log_file': '/tmp/yaver.log'},
-            'ollama': {'model_general': 'mistral', 'model_code': 'mistral', 'base_url': 'http://localhost:11434'}
-        })
+        minimal = ConfigWrapper(
+            {
+                "logging": {"log_level": "INFO", "log_file": "/tmp/yaver.log"},
+                "ollama": {
+                    "model_general": "mistral",
+                    "model_code": "mistral",
+                    "base_url": "http://localhost:11434",
+                },
+            }
+        )
         return minimal
 
 
@@ -49,7 +58,7 @@ def get_config():
 # Rich Console for beautiful output
 # ============================================================================
 # Disable Rich console in worker mode to prevent JSON corruption
-if os.getenv('YAVER_NO_RICH'):
+if os.getenv("YAVER_NO_RICH"):
     CONSOLE = None
 else:
     CONSOLE = Console()
@@ -63,8 +72,10 @@ else:
 # ============================================================================
 import json
 
+
 class JSONFormatter(logging.Formatter):
     """JSON log formatter"""
+
     def format(self, record):
         log_obj = {
             "timestamp": datetime.fromtimestamp(record.created).isoformat(),
@@ -77,63 +88,63 @@ class JSONFormatter(logging.Formatter):
             log_obj["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_obj)
 
+
 def setup_logger(name: str = "yaver") -> logging.Logger:
     """Setup rich logger with file and console handlers"""
     config = get_config()
-    
+
     logger = logging.getLogger(name)
-    
+
     # Safe config access with defaults
-    log_level = getattr(config, 'logging', None)
-    if log_level and hasattr(log_level, 'log_level'):
+    log_level = getattr(config, "logging", None)
+    if log_level and hasattr(log_level, "log_level"):
         logger.setLevel(getattr(logging, log_level.log_level, logging.INFO))
     else:
         logger.setLevel(logging.INFO)
-    
+
     # Clear existing handlers
     logger.handlers.clear()
-    
+
     # Use log path from config (defaults to yaver/logs/yaver.log)
-    log_file = getattr(config, 'logging', None)
-    if log_file and hasattr(log_file, 'log_file'):
+    log_file = getattr(config, "logging", None)
+    if log_file and hasattr(log_file, "log_file"):
         log_path = Path(log_file.log_file).resolve()
     else:
-        log_path = Path.home() / '.yaver' / 'logs' / 'yaver.log'
-    
+        log_path = Path.home() / ".yaver" / "logs" / "yaver.log"
+
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     from logging.handlers import RotatingFileHandler
+
     # Rotate at 10MB, keep 5 backups
     file_handler = RotatingFileHandler(
-        log_path, 
-        maxBytes=10*1024*1024, 
-        backupCount=5, 
-        encoding='utf-8'
+        log_path, maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"
     )
     file_handler.setLevel(logging.DEBUG)
-    
+
     # Use JSON Formatter for file
     file_handler.setFormatter(JSONFormatter())
     logger.addHandler(file_handler)
-    
+
     # Console handler (Rich) remains for human readability
-    logging_config = getattr(config, 'logging', None)
-    enable_rich = getattr(logging_config, 'enable_rich_logging', True) if logging_config else True
-    
+    logging_config = getattr(config, "logging", None)
+    enable_rich = (
+        getattr(logging_config, "enable_rich_logging", True) if logging_config else True
+    )
+
     if enable_rich and CONSOLE:
         console_handler = RichHandler(
-            console=CONSOLE,
-            rich_tracebacks=True,
-            tracebacks_show_locals=True
+            console=CONSOLE, rich_tracebacks=True, tracebacks_show_locals=True
         )
         console_handler.setLevel(logging.INFO)
         logger.addHandler(console_handler)
-    
+
     return logger
 
 
 # Global logger - lazy loaded
 _logger = None
+
 
 def get_logger():
     """Get global logger (lazy initialized)"""
@@ -141,6 +152,7 @@ def get_logger():
     if _logger is None:
         _logger = setup_logger()
     return _logger
+
 
 # Initialize logger immediately
 logger = get_logger()
@@ -151,6 +163,7 @@ logger = get_logger()
 # ============================================================================
 class TaskStatus(str, Enum):
     """Task status enumeration"""
+
     PENDING = "pending"
     READY = "ready"
     IN_PROGRESS = "in_progress"
@@ -162,6 +175,7 @@ class TaskStatus(str, Enum):
 
 class TaskPriority(str, Enum):
     """Task priority levels"""
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -170,6 +184,7 @@ class TaskPriority(str, Enum):
 
 class AnalysisType(str, Enum):
     """Types of code analysis"""
+
     STRUCTURE = "structure"
     QUALITY = "quality"
     SECURITY = "security"
@@ -183,6 +198,7 @@ class AnalysisType(str, Enum):
 # ============================================================================
 class FileAnalysis(BaseModel):
     """Analysis result for a single file"""
+
     file_path: str
     language: str
     lines_of_code: int
@@ -195,6 +211,7 @@ class FileAnalysis(BaseModel):
 
 class ArchitectureAnalysis(BaseModel):
     """Architecture analysis result"""
+
     architecture_type: str = "Unknown"
     patterns: List[str] = Field(default_factory=list)
     layers: List[str] = Field(default_factory=list)
@@ -202,13 +219,16 @@ class ArchitectureAnalysis(BaseModel):
     dependencies: Dict[str, List[str]] = Field(default_factory=dict)
     issues: List[str] = Field(default_factory=list)
     recommendations: List[str] = Field(default_factory=list)
-    actionable_tasks: List[Dict[str, str]] = Field(default_factory=list)  # Parsed tasks from suggestions
-    diagram: Optional[str] = None # Mermaid JS diagram
-    documentation: Optional[str] = None # Generated documentation summary
+    actionable_tasks: List[Dict[str, str]] = Field(
+        default_factory=list
+    )  # Parsed tasks from suggestions
+    diagram: Optional[str] = None  # Mermaid JS diagram
+    documentation: Optional[str] = None  # Generated documentation summary
 
 
 class Task(BaseModel):
     """Task model for iteration management"""
+
     id: str
     title: str
     description: str
@@ -230,6 +250,7 @@ class Task(BaseModel):
 
 class RepositoryInfo(BaseModel):
     """Git repository information"""
+
     repo_path: str
     repo_url: Optional[str] = None
     branch: str = "main"
@@ -245,32 +266,33 @@ class RepositoryInfo(BaseModel):
 # ============================================================================
 class YaverState(TypedDict, total=False):
     """Main state for Yaver AI workflow"""
+
     # User input
     user_request: str
     mode: str  # "analyze", "architect", "task_solve", "full_assistance"
-    
+
     # Repository information
     repo_path: Optional[str]
     repo_url: Optional[str]
     repo_info: Optional[RepositoryInfo]
-    
+
     # Analysis results
     file_analyses: List[FileAnalysis]
     architecture_analysis: Optional[ArchitectureAnalysis]
     code_quality_score: Optional[float]
-    
+
     # Task management
     tasks: List[Task]
     current_task: Optional[Task]
     completed_tasks: List[str]
     iteration_count: int
-    
+
     # Generated outputs
     architecture_diagram: Optional[str]
     documentation: Optional[str]
     refactoring_plan: Optional[str]
     implementation_files: Dict[str, str]  # filename -> content
-    
+
     # Workflow control
     log: List[str]
     errors: List[str]
@@ -281,9 +303,11 @@ class YaverState(TypedDict, total=False):
 # Try to import SQLLoggingCallback (optional)
 try:
     from tools.interaction_logger import SQLLoggingCallback
+
     HAS_SQL_LOGGING = True
 except ImportError:
     HAS_SQL_LOGGING = False
+
 
 # ============================================================================
 # LLM Factory
@@ -291,16 +315,24 @@ except ImportError:
 def create_llm(model_type: str = "general", **kwargs) -> ChatOllama:
     """Create LLM instance based on type with optional authentication"""
     config = get_config_dict()
-    
+
     # Handle both flat and nested config formats
     if isinstance(config, dict):
         # Flat format (current) - try multiple key variations
-        model_general = config.get('OLLAMA_MODEL_GENERAL', config.get('OLLAMA_MODEL', 'mistral'))
-        model_code = config.get('OLLAMA_MODEL_CODE', config.get('OLLAMA_MODEL_CODER', 'mistral'))
-        model_extraction = config.get('OLLAMA_MODEL_EXTRACTION', model_code)  # Fallback to code model
-        base_url = config.get('OLLAMA_BASE_URL', config.get('OLLAMA_URL', 'http://localhost:11434'))
-        username = config.get('OLLAMA_USERNAME')
-        password = config.get('OLLAMA_PASSWORD')
+        model_general = config.get(
+            "OLLAMA_MODEL_GENERAL", config.get("OLLAMA_MODEL", "mistral")
+        )
+        model_code = config.get(
+            "OLLAMA_MODEL_CODE", config.get("OLLAMA_MODEL_CODER", "mistral")
+        )
+        model_extraction = config.get(
+            "OLLAMA_MODEL_EXTRACTION", model_code
+        )  # Fallback to code model
+        base_url = config.get(
+            "OLLAMA_BASE_URL", config.get("OLLAMA_URL", "http://localhost:11434")
+        )
+        username = config.get("OLLAMA_USERNAME")
+        password = config.get("OLLAMA_PASSWORD")
     else:
         # Nested format (from config.py)
         model_general = config.ollama.model_general
@@ -309,58 +341,55 @@ def create_llm(model_type: str = "general", **kwargs) -> ChatOllama:
         base_url = config.ollama.base_url
         username = config.ollama.username
         password = config.ollama.password
-    
+
     model_map = {
         "general": model_general,
         "code": model_code,
         "extraction": model_extraction,
     }
-    
+
     model_name = model_map.get(model_type, model_general)
-    
+
     # Build auth tuple if credentials provided
     if username and password:
         # LangChain Ollama might not support 'auth' directly in some versions
         # So we inject it into headers via client_kwargs for robustness
         import base64
+
         auth_str = f"{username}:{password}"
         b64_auth = base64.b64encode(auth_str.encode()).decode()
-        
+
         # Prepare headers
-        headers = kwargs.get('headers', {})
-        headers['Authorization'] = f"Basic {b64_auth}"
-        
+        headers = kwargs.get("headers", {})
+        headers["Authorization"] = f"Basic {b64_auth}"
+
         # We REMOVE headers from kwargs to avoid duplication or confusion
         # and instead pass them inside client_kwargs which ChatOllama uses for httpx.Client
-        if 'headers' in kwargs:
-            del kwargs['headers']
-            
-        client_kwargs = kwargs.get('client_kwargs', {})
-        client_kwargs['headers'] = headers
-        kwargs['client_kwargs'] = client_kwargs
-        
+        if "headers" in kwargs:
+            del kwargs["headers"]
+
+        client_kwargs = kwargs.get("client_kwargs", {})
+        client_kwargs["headers"] = headers
+        kwargs["client_kwargs"] = client_kwargs
+
         # Also clean up auth if it was passed
-        if 'auth' in kwargs:
-             del kwargs['auth']
-             
+        if "auth" in kwargs:
+            del kwargs["auth"]
+
         logger.info(f"🔐 Ollama authentication enabled for user: {username}")
-    
+
     # Add SQL Logger Callback if available
     if HAS_SQL_LOGGING:
-        callbacks = kwargs.get('callbacks', [])
+        callbacks = kwargs.get("callbacks", [])
         if not any(isinstance(c, SQLLoggingCallback) for c in callbacks):
             try:
                 callbacks.append(SQLLoggingCallback(model_name=model_name))
-                kwargs['callbacks'] = callbacks
+                kwargs["callbacks"] = callbacks
             except Exception:
                 # Ignore if SQL logging fails
                 pass
 
-    return ChatOllama(
-        model=model_name,
-        base_url=base_url,
-        **kwargs
-    )
+    return ChatOllama(model=model_name, base_url=base_url, **kwargs)
 
 
 # ============================================================================
@@ -375,7 +404,7 @@ def calculate_elapsed_time(start_time: datetime) -> str:
     """Calculate elapsed time in human-readable format"""
     elapsed = datetime.now() - start_time
     seconds = elapsed.total_seconds()
-    
+
     if seconds < 60:
         return f"{seconds:.1f} saniye"
     elif seconds < 3600:
@@ -393,19 +422,21 @@ def ensure_directory(path: str) -> Path:
     return dir_path
 
 
-def save_output_file(content: str, filename: str, output_dir: Optional[str] = None) -> str:
+def save_output_file(
+    content: str, filename: str, output_dir: Optional[str] = None
+) -> str:
     """Save output file and return path"""
     config = get_config()
-    
+
     if output_dir is None:
         output_dir = config.project.default_output_dir
-    
+
     output_path = ensure_directory(output_dir)
     file_path = output_path / filename
-    
-    with open(file_path, 'w', encoding='utf-8') as f:
+
+    with open(file_path, "w", encoding="utf-8") as f:
         f.write(content)
-    
+
     logger.info(f"✅ File saved: {file_path}")
     return str(file_path)
 
@@ -413,7 +444,7 @@ def save_output_file(content: str, filename: str, output_dir: Optional[str] = No
 def load_file(file_path: str) -> Optional[str]:
     """Load file content safely"""
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
     except Exception as e:
         logger.error(f"❌ File read failed {file_path}: {e}")
@@ -435,36 +466,41 @@ def retrieve_relevant_context(query: str, limit: int = 5) -> str:
     try:
         from .agent_memory import get_memory_manager
         from core.session_manager import get_session_manager
-        
+
         memory = get_memory_manager()
         session_mgr = get_session_manager()
         active_session = session_mgr.get_active_session()
-        
+
         # 1. Search for related code
         code_results = memory.get_related_code(query, limit=3)
-        
+
         # 2. Filter by active session if available
         if active_session and code_results:
             code_results = [
-                item for item in code_results 
-                if item.get('metadata', {}).get('session_id') == active_session
+                item
+                for item in code_results
+                if item.get("metadata", {}).get("session_id") == active_session
             ]
-        
+
         # 3. Search for generic/task memories (optional, can be expanded)
         # generic_results = memory.search_memories(query, limit=2)
-        
+
         if not code_results:
             return ""
-        
+
         session_info = f" [Session: {active_session}]" if active_session else ""
         context_str = f"\n\n=== 🧠 RECALLED MEMORY{session_info} ===\n"
         for item in code_results:
             context_str += f"- Found relevant code in {item['metadata'].get('file_path', 'unknown')}:\n"
-            content_preview = item['content'][:500] + "..." if len(item['content']) > 500 else item['content']
+            content_preview = (
+                item["content"][:500] + "..."
+                if len(item["content"]) > 500
+                else item["content"]
+            )
             context_str += f"  {content_preview}\n\n"
-            
+
         return context_str
-        
+
     except Exception as e:
         logger.warning(f"Failed to retrieve context: {e}")
         return ""
@@ -507,20 +543,18 @@ def print_info(message: str):
 if __name__ == "__main__":
     # Test module
     print_section_header("Yaver AI - Agent Base Module Test", "🧪")
-    
+
     config = get_config()
     print_success(f"Config loaded: {config.ollama.model_general}")
-    
+
     # Test LLM creation
     llm = create_llm("general")
     print_success(f"LLM created: {llm.model}")
-    
+
     # Test task creation
     task = Task(
-        id=create_task_id(),
-        title="Test Task",
-        description="This is a test task"
+        id=create_task_id(), title="Test Task", description="This is a test task"
     )
     print_success(f"Task created: {task.id}")
-    
+
     logger.info("Agent base module test completed successfully!")

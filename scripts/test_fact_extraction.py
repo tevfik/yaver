@@ -24,9 +24,10 @@ except ImportError as e:
 # Patch the get_config_dict in agent_base to bypass broken user config
 # agent_base.get_config_dict = mock_get_config
 
+
 def test_extraction():
     logging.basicConfig(level=logging.INFO)
-    
+
     print("Initializing FactExtractor...")
     try:
         extractor = FactExtractor()
@@ -44,17 +45,18 @@ def test_extraction():
             # Validate credentials against Postgres DB
             pass
     """
-    
+
     print("Extracting facts from sample code...")
     try:
         facts = extractor.extract_facts(sample_code)
-        
+
         print(f"Found {len(facts)} facts:")
         for f in facts:
             print(f" - ({f.subject}) -[{f.predicate}]-> ({f.object})")
-            
+
     except Exception as e:
         print(f"Extraction failed: {e}")
+
 
 if __name__ == "__main__":
     test_extraction()

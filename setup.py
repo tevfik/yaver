@@ -7,7 +7,7 @@ Then use: yaver chat
 
 All integrations included:
 - Qdrant vector database for semantic search
-- Neo4j for code graph analysis  
+- Neo4j for code graph analysis
 - Ollama for local LLM (multiple specialized models)
 - LangChain for orchestration
 - ChromaDB for memory
@@ -53,18 +53,14 @@ else:
         "langchain-core>=0.3.0",
         "langchain-ollama>=0.2.0",
         "langgraph>=0.2.0",
-        
         # LLM & Embeddings
         "ollama>=0.4.0",
-        
         # Data Validation & Parsing
         "pydantic>=2.0.0",
         "pydantic-settings>=2.0.0",
-        
         # Git Operations
         "gitpython>=3.1.40",
         "pygit2>=1.13.0",
-        
         # Code Analysis & Quality
         "radon>=6.0.1",
         "lizard>=1.17.10",
@@ -73,32 +69,26 @@ else:
         "black>=23.0.0",
         "isort>=5.12.0",
         "mypy>=1.7.0",
-        
         # File Processing
         "tree-sitter>=0.20.0",
         "tree-sitter-python>=0.20.0",
         "tree-sitter-javascript>=0.20.0",
-        
         # Vector Database & Memory
         "chromadb>=0.4.0",
         "qdrant-client>=1.9.1",
         "sentence-transformers>=2.2.0",
         "mem0ai>=0.1.0",
-        
         # Web & API
         "fastapi>=0.104.0",
         "uvicorn>=0.24.0",
         "python-multipart>=0.0.6",
         "gradio>=4.0.0",
         "requests>=2.31.0",
-        
         # Graph Database (Neo4j)
         "neo4j>=5.0.0",
-        
         # Terminal UI
         "rich>=13.0.0",
         "typer>=0.9.0",
-        
         # Async
         "aiohttp>=3.9.0",
     ]
@@ -140,8 +130,16 @@ setup(
         "Operating System :: OS Independent",
     ],
     keywords=[
-        "ai", "development", "git", "code-analysis", "llm",
-        "langchain", "qdrant", "neo4j", "ollama", "assistant",
+        "ai",
+        "development",
+        "git",
+        "code-analysis",
+        "llm",
+        "langchain",
+        "qdrant",
+        "neo4j",
+        "ollama",
+        "assistant",
     ],
     zip_safe=False,
 )

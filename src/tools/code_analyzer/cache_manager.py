@@ -11,16 +11,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class CachingManager:
     """
     Manages caching for file analysis.
     Uses file content hash as key.
     """
-    
+
     def __init__(self, cache_dir: Optional[Path] = None):
         """
         Initialize caching manager.
-        
+
         Args:
             cache_dir: custom cache directory (default: ~/.yaver/cache/ast)
         """
@@ -28,9 +29,9 @@ class CachingManager:
             self.base_dir = cache_dir
         else:
             self.base_dir = Path.home() / ".yaver" / "cache" / "ast"
-            
+
         self.base_dir.mkdir(parents=True, exist_ok=True)
-        
+
     def _get_file_hash(self, file_path: Path) -> str:
         """Calculate SHA-256 hash of a file"""
         try:
@@ -54,35 +55,35 @@ class CachingManager:
     def get_cached_analysis(self, file_path: Path) -> Optional[Any]:
         """
         Retrieve cached analysis result if valid.
-        
+
         Args:
             file_path: Path to the source file
-            
+
         Returns:
             Cached object or None
         """
         if not file_path.exists():
             return None
-            
+
         file_hash = self._get_file_hash(file_path)
         if not file_hash:
             return None
-            
+
         cache_path = self._get_cache_path(file_hash)
-        
+
         if cache_path.exists():
             try:
                 with open(cache_path, "rb") as f:
                     return pickle.load(f)
             except Exception as e:
                 logger.warning(f"Failed to load cache for {file_path}: {e}")
-                
+
         return None
 
     def save_analysis(self, file_path: Path, data: Any):
         """
         Save analysis result to cache.
-        
+
         Args:
             file_path: Path to the source file (to calculate hash key)
             data: The analysis object/data to pickle
@@ -90,9 +91,9 @@ class CachingManager:
         file_hash = self._get_file_hash(file_path)
         if not file_hash:
             return
-            
+
         cache_path = self._get_cache_path(file_hash)
-        
+
         try:
             with open(cache_path, "wb") as f:
                 pickle.dump(data, f)
@@ -102,6 +103,7 @@ class CachingManager:
     def clear(self):
         """Clear all cache"""
         import shutil
+
         if self.base_dir.exists():
             shutil.rmtree(self.base_dir)
             self.base_dir.mkdir(parents=True, exist_ok=True)

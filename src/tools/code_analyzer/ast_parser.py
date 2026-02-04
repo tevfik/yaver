@@ -12,34 +12,35 @@ from .parsers.base import BaseParser
 
 logger = logging.getLogger(__name__)
 
+
 class ASTParser(BaseParser):
     """Parses Python code to extract structural information"""
 
-    def parse(self, source_code: str, file_path: Path, repo_root: Path) -> Optional[FileAnalysis]:
+    def parse(
+        self, source_code: str, file_path: Path, repo_root: Path
+    ) -> Optional[FileAnalysis]:
         """
         Parse Python source code.
         """
         try:
             tree = ast.parse(source_code)
-            
+
             rel_path = file_path.relative_to(repo_root).as_posix()
-            
+
             analysis = FileAnalysis(
-                file_path=rel_path,
-                loc=len(source_code.splitlines()),
-                content_hash="" 
+                file_path=rel_path, loc=len(source_code.splitlines()), content_hash=""
             )
-            
+
             # Visitor pass
             visitor = AnalysisVisitor()
             visitor.visit(tree)
-            
+
             analysis.classes = visitor.classes
             analysis.functions = visitor.functions
             analysis.imports = visitor.imports
-            
+
             return analysis
-            
+
         except Exception as e:
             logger.error(f"Failed to parse {file_path}: {e}")
             return None
@@ -59,7 +60,7 @@ class ASTParser(BaseParser):
 
 class AnalysisVisitor(ast.NodeVisitor):
     """AST Visitor to extract info"""
-    
+
     def __init__(self):
         self.classes: List[ClassInfo] = []
         self.functions: List[FunctionInfo] = []
@@ -68,21 +69,15 @@ class AnalysisVisitor(ast.NodeVisitor):
 
     def visit_Import(self, node: ast.Import):
         for alias in node.names:
-            self.imports.append(ImportInfo(
-                module=alias.name,
-                names=[],
-                alias=alias.asname
-            ))
+            self.imports.append(
+                ImportInfo(module=alias.name, names=[], alias=alias.asname)
+            )
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom):
         module = node.module or ""
         names = [n.name for n in node.names]
-        self.imports.append(ImportInfo(
-            module=module,
-            names=names,
-            level=node.level
-        ))
+        self.imports.append(ImportInfo(module=module, names=names, level=node.level))
         self.generic_visit(node)
 
     def visit_ClassDef(self, node: ast.ClassDef):
@@ -92,25 +87,29 @@ class AnalysisVisitor(ast.NodeVisitor):
             if isinstance(base, ast.Name):
                 bases.append(base.id)
             elif isinstance(base, ast.Attribute):
-                bases.append(f"{base.value.id}.{base.attr}" if isinstance(base.value, ast.Name) else "Unknown")
-        
+                bases.append(
+                    f"{base.value.id}.{base.attr}"
+                    if isinstance(base.value, ast.Name)
+                    else "Unknown"
+                )
+
         decorators = [self._get_decorator_name(d) for d in node.decorator_list]
-        
+
         class_info = ClassInfo(
             name=node.name,
             bases=bases,
             docstring=ast.get_docstring(node),
             start_line=node.lineno,
             end_line=node.end_lineno or node.lineno,
-            decorators=decorators
+            decorators=decorators,
         )
-        
+
         # Recurse into body handling methods
         prev_class = self.current_class
         self.current_class = class_info
-        
+
         self.generic_visit(node)
-        
+
         self.classes.append(class_info)
         self.current_class = prev_class
 
@@ -120,21 +119,23 @@ class AnalysisVisitor(ast.NodeVisitor):
     def visit_FunctionDef(self, node: ast.FunctionDef):
         self._handle_function(node, is_async=False)
 
-    def _handle_function(self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef], is_async: bool):
+    def _handle_function(
+        self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef], is_async: bool
+    ):
         args = [a.arg for a in node.args.args]
-        
+
         returns = None
         if node.returns:
-             if isinstance(node.returns, ast.Name):
-                 returns = node.returns.id
-             elif isinstance(node.returns, ast.Constant) and node.returns.value is None:
-                 returns = "None"
-        
+            if isinstance(node.returns, ast.Name):
+                returns = node.returns.id
+            elif isinstance(node.returns, ast.Constant) and node.returns.value is None:
+                returns = "None"
+
         decorators = [self._get_decorator_name(d) for d in node.decorator_list]
-        
+
         # Calculate complexity
         complexity = self._calculate_cyclomatic_complexity(node)
-        
+
         func_info = FunctionInfo(
             name=node.name,
             args=args,
@@ -144,16 +145,18 @@ class AnalysisVisitor(ast.NodeVisitor):
             end_line=node.end_lineno or node.lineno,
             decorators=decorators,
             is_async=is_async,
-            complexity=complexity
+            complexity=complexity,
         )
-        
+
         if self.current_class:
             self.current_class.methods.append(func_info)
-        elif not self.current_class: # Only add top-level functions to global list, nested funcs inside logic?
-            # For now, simplistic: if not in class, it's top level. 
+        elif (
+            not self.current_class
+        ):  # Only add top-level functions to global list, nested funcs inside logic?
+            # For now, simplistic: if not in class, it's top level.
             # Note: This logic misses nested functions inside functions.
             self.functions.append(func_info)
-            
+
         self.generic_visit(node)
 
     def _calculate_cyclomatic_complexity(self, node: ast.AST) -> int:
@@ -164,7 +167,19 @@ class AnalysisVisitor(ast.NodeVisitor):
         """
         complexity = 1
         for child in ast.walk(node):
-            if isinstance(child, (ast.If, ast.While, ast.For, ast.AsyncFor, ast.ExceptHandler, ast.With, ast.AsyncWith, ast.Assert)):
+            if isinstance(
+                child,
+                (
+                    ast.If,
+                    ast.While,
+                    ast.For,
+                    ast.AsyncFor,
+                    ast.ExceptHandler,
+                    ast.With,
+                    ast.AsyncWith,
+                    ast.Assert,
+                ),
+            ):
                 complexity += 1
             elif isinstance(child, ast.BoolOp):
                 # Add 1 for each boolean operator (and, or) strictly

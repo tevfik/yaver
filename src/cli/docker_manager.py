@@ -21,10 +21,7 @@ class DockerManager:
         """Check if Docker is installed"""
         try:
             subprocess.run(
-                ["docker", "--version"],
-                capture_output=True,
-                check=True,
-                timeout=5
+                ["docker", "--version"], capture_output=True, check=True, timeout=5
             )
             return True
         except Exception:
@@ -33,12 +30,7 @@ class DockerManager:
     def check_docker_running(self) -> bool:
         """Check if Docker daemon is running"""
         try:
-            subprocess.run(
-                ["docker", "ps"],
-                capture_output=True,
-                check=True,
-                timeout=5
-            )
+            subprocess.run(["docker", "ps"], capture_output=True, check=True, timeout=5)
             return True
         except Exception:
             return False
@@ -51,19 +43,19 @@ class DockerManager:
                 ["docker", "compose", "version"],
                 capture_output=True,
                 check=True,
-                timeout=5
+                timeout=5,
             )
             return True
         except Exception:
             pass
-        
+
         # Fallback to docker-compose v1
         try:
             subprocess.run(
                 ["docker-compose", "--version"],
                 capture_output=True,
                 check=True,
-                timeout=5
+                timeout=5,
             )
             return True
         except Exception:
@@ -76,7 +68,7 @@ class DockerManager:
                 ["docker", "compose", "version"],
                 capture_output=True,
                 check=True,
-                timeout=5
+                timeout=5,
             )
             return ["docker", "compose"]
         except Exception:
@@ -98,9 +90,9 @@ class DockerManager:
                 capture_output=True,
                 text=True,
                 timeout=10,
-                cwd=str(self.docker_dir)
+                cwd=str(self.docker_dir),
             )
-            
+
             if result.returncode == 0 and result.stdout:
                 return json.loads(result.stdout)
             return {}
@@ -110,13 +102,22 @@ class DockerManager:
     def start_services(self, verbose: bool = True) -> Tuple[bool, str]:
         """Start Docker services"""
         if not self.check_docker_installed():
-            return False, "❌ Docker is not installed. Install from: https://docs.docker.com/get-docker/"
+            return (
+                False,
+                "❌ Docker is not installed. Install from: https://docs.docker.com/get-docker/",
+            )
 
         if not self.check_docker_running():
-            return False, "❌ Docker daemon is not running. Start Docker Desktop or daemon."
+            return (
+                False,
+                "❌ Docker daemon is not running. Start Docker Desktop or daemon.",
+            )
 
         if not self.check_compose_installed():
-            return False, "❌ Docker Compose is not installed. Install from: https://docs.docker.com/compose/install/"
+            return (
+                False,
+                "❌ Docker Compose is not installed. Install from: https://docs.docker.com/compose/install/",
+            )
 
         if not self.compose_exists():
             return False, f"❌ docker-compose.yml not found at {self.compose_file}"
@@ -130,14 +131,14 @@ class DockerManager:
                 result = subprocess.run(
                     compose_cmd + ["-f", str(self.compose_file), "up", "-d"],
                     timeout=60,
-                    cwd=str(self.docker_dir)
+                    cwd=str(self.docker_dir),
                 )
             else:
                 result = subprocess.run(
                     compose_cmd + ["-f", str(self.compose_file), "up", "-d"],
                     capture_output=True,
                     timeout=60,
-                    cwd=str(self.docker_dir)
+                    cwd=str(self.docker_dir),
                 )
 
             if result.returncode == 0:
@@ -163,14 +164,14 @@ class DockerManager:
                 result = subprocess.run(
                     compose_cmd + ["-f", str(self.compose_file), "down"],
                     timeout=30,
-                    cwd=str(self.docker_dir)
+                    cwd=str(self.docker_dir),
                 )
             else:
                 result = subprocess.run(
                     compose_cmd + ["-f", str(self.compose_file), "down"],
                     capture_output=True,
                     timeout=30,
-                    cwd=str(self.docker_dir)
+                    cwd=str(self.docker_dir),
                 )
 
             if result.returncode == 0:
@@ -195,6 +196,7 @@ class DockerManager:
         chroma_enabled = False
         try:
             import yaml
+
             if self.compose_file.exists():
                 with open(self.compose_file) as f:
                     compose_config = yaml.safe_load(f)
@@ -204,6 +206,7 @@ class DockerManager:
             # If YAML parsing fails, try JSON format
             try:
                 import json
+
                 with open(self.compose_file) as f:
                     compose_config = json.load(f)
                     if compose_config and "services" in compose_config:
@@ -224,19 +227,19 @@ class DockerManager:
                     health[service_name] = {
                         "status": "✅ running",
                         "url": url,
-                        "description": description
+                        "description": description,
                     }
                 else:
                     health[service_name] = {
                         "status": "⚠️  error",
                         "url": url,
-                        "description": description
+                        "description": description,
                     }
             except Exception:
                 health[service_name] = {
                     "status": "❌ unreachable",
                     "url": url,
-                    "description": description
+                    "description": description,
                 }
 
         return health
@@ -249,11 +252,15 @@ class DockerManager:
 
         # Check prerequisites
         print("\n📋 Docker Prerequisites:")
-        print(f"  • Docker installed: {'✅ yes' if self.check_docker_installed() else '❌ no'}")
+        print(
+            f"  • Docker installed: {'✅ yes' if self.check_docker_installed() else '❌ no'}"
+        )
         print(
             f"  • Docker running: {'✅ yes' if self.check_docker_running() else '❌ no'}"
         )
-        print(f"  • Docker Compose: {'✅ yes' if self.check_compose_installed() else '❌ no'}")
+        print(
+            f"  • Docker Compose: {'✅ yes' if self.check_compose_installed() else '❌ no'}"
+        )
         print(f"  • compose.yml found: {'✅ yes' if self.compose_exists() else '❌ no'}")
 
         # Service status
@@ -334,8 +341,9 @@ def manage_docker_interactive():
         try:
             compose_cmd = manager.get_compose_command()
             subprocess.run(
-                compose_cmd + ["-f", str(manager.compose_file), "logs", "-f", "--tail=50"],
-                cwd=str(manager.docker_dir)
+                compose_cmd
+                + ["-f", str(manager.compose_file), "logs", "-f", "--tail=50"],
+                cwd=str(manager.docker_dir),
             )
         except KeyboardInterrupt:
             print("\n\nLogs stopped.\n")

@@ -6,7 +6,7 @@ Adapted from IntelligentAgent project.
 import os
 import logging
 from typing import Optional, List, Dict, Any
-from devmind_cli.config import QdrantConfig, OllamaConfig
+from yaver_cli.config import QdrantConfig, OllamaConfig
 
 try:
     from mem0 import Memory

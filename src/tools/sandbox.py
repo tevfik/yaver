@@ -10,7 +10,7 @@ import os
 import logging
 from typing import Tuple, Optional
 
-logger = logging.getLogger("devmind_cli")
+logger = logging.getLogger("yaver_cli")
 
 class Sandbox:
     def __init__(self, timeout: int = 10):

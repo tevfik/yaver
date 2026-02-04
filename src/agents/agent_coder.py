@@ -7,11 +7,11 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 
-from devmind_cli.agent_base import create_llm, print_section_header, print_info, load_file, retrieve_relevant_context
-from devmind_cli.config import get_config
-from devmind_cli.prompts import CODER_USER_TEMPLATE, CODER_FIX_TEMPLATE
+from yaver_cli.agent_base import create_llm, print_section_header, print_info, load_file, retrieve_relevant_context
+from yaver_cli.config import get_config
+from yaver_cli.prompts import CODER_USER_TEMPLATE, CODER_FIX_TEMPLATE
 
-logger = logging.getLogger("devmind_cli")
+logger = logging.getLogger("yaver_cli")
 
 class CoderAgent:
     """Agent responsible for writing and modifying code"""

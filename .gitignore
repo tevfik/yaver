@@ -69,3 +69,7 @@ htmlcov/
 
 # Documentation builds
 docs/_build/
+# Development workflow tracking (NOT committed)
+temp_docs/
+!temp_docs/.gitignore
+!temp_docs/README.md

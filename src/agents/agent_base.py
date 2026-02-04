@@ -1,5 +1,5 @@
 """
-Agent Base Module - Core state and utilities for DevMind AI
+Agent Base Module - Core state and utilities for Yaver AI
 Inspired by IntelligentAgent and CodingAgent architectures
 """
 
@@ -39,7 +39,7 @@ def get_config():
     except Exception as e:
         # Fallback: return minimal config
         minimal = ConfigWrapper({
-            'logging': {'log_level': 'INFO', 'log_file': '/tmp/devmind.log'},
+            'logging': {'log_level': 'INFO', 'log_file': '/tmp/yaver.log'},
             'ollama': {'model_general': 'mistral', 'model_code': 'mistral', 'base_url': 'http://localhost:11434'}
         })
         return minimal
@@ -49,7 +49,7 @@ def get_config():
 # Rich Console for beautiful output
 # ============================================================================
 # Disable Rich console in worker mode to prevent JSON corruption
-if os.getenv('DEVMIND_NO_RICH'):
+if os.getenv('YAVER_NO_RICH'):
     CONSOLE = None
 else:
     CONSOLE = Console()
@@ -77,18 +77,29 @@ class JSONFormatter(logging.Formatter):
             log_obj["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_obj)
 
-def setup_logger(name: str = "devmind") -> logging.Logger:
+def setup_logger(name: str = "yaver") -> logging.Logger:
     """Setup rich logger with file and console handlers"""
     config = get_config()
     
     logger = logging.getLogger(name)
-    logger.setLevel(getattr(logging, config.logging.log_level))
+    
+    # Safe config access with defaults
+    log_level = getattr(config, 'logging', None)
+    if log_level and hasattr(log_level, 'log_level'):
+        logger.setLevel(getattr(logging, log_level.log_level, logging.INFO))
+    else:
+        logger.setLevel(logging.INFO)
     
     # Clear existing handlers
     logger.handlers.clear()
     
-    # Use log path from config (defaults to devmind/logs/devmind.log)
-    log_path = Path(config.logging.log_file).resolve()
+    # Use log path from config (defaults to yaver/logs/yaver.log)
+    log_file = getattr(config, 'logging', None)
+    if log_file and hasattr(log_file, 'log_file'):
+        log_path = Path(log_file.log_file).resolve()
+    else:
+        log_path = Path.home() / '.yaver' / 'logs' / 'yaver.log'
+    
     log_path.parent.mkdir(parents=True, exist_ok=True)
     
     from logging.handlers import RotatingFileHandler
@@ -106,7 +117,10 @@ def setup_logger(name: str = "devmind") -> logging.Logger:
     logger.addHandler(file_handler)
     
     # Console handler (Rich) remains for human readability
-    if config.logging.enable_rich_logging and CONSOLE:
+    logging_config = getattr(config, 'logging', None)
+    enable_rich = getattr(logging_config, 'enable_rich_logging', True) if logging_config else True
+    
+    if enable_rich and CONSOLE:
         console_handler = RichHandler(
             console=CONSOLE,
             rich_tracebacks=True,
@@ -128,16 +142,8 @@ def get_logger():
         _logger = setup_logger()
     return _logger
 
-# For compatibility
-logger = None
-
-def __getattr__(name):
-    """Lazy load logger on first access"""
-    global logger
-    if name == 'logger':
-        logger = get_logger()
-        return logger
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+# Initialize logger immediately
+logger = get_logger()
 
 
 # ============================================================================
@@ -237,8 +243,8 @@ class RepositoryInfo(BaseModel):
 # ============================================================================
 # TypedDict for LangGraph State
 # ============================================================================
-class DevMindState(TypedDict, total=False):
-    """Main state for DevMind AI workflow"""
+class YaverState(TypedDict, total=False):
+    """Main state for Yaver AI workflow"""
     # User input
     user_request: str
     mode: str  # "analyze", "architect", "task_solve", "full_assistance"
@@ -288,16 +294,18 @@ def create_llm(model_type: str = "general", **kwargs) -> ChatOllama:
     
     # Handle both flat and nested config formats
     if isinstance(config, dict):
-        # Flat format (current)
-        model_general = config.get('OLLAMA_MODEL', 'mistral')
-        model_code = config.get('OLLAMA_MODEL_CODER', 'mistral')
-        base_url = config.get('OLLAMA_URL', 'http://localhost:11434')
+        # Flat format (current) - try multiple key variations
+        model_general = config.get('OLLAMA_MODEL_GENERAL', config.get('OLLAMA_MODEL', 'mistral'))
+        model_code = config.get('OLLAMA_MODEL_CODE', config.get('OLLAMA_MODEL_CODER', 'mistral'))
+        model_extraction = config.get('OLLAMA_MODEL_EXTRACTION', model_code)  # Fallback to code model
+        base_url = config.get('OLLAMA_BASE_URL', config.get('OLLAMA_URL', 'http://localhost:11434'))
         username = config.get('OLLAMA_USERNAME')
         password = config.get('OLLAMA_PASSWORD')
     else:
         # Nested format (from config.py)
         model_general = config.ollama.model_general
         model_code = config.ollama.model_code
+        model_extraction = config.ollama.model_extraction
         base_url = config.ollama.base_url
         username = config.ollama.username
         password = config.ollama.password
@@ -305,13 +313,36 @@ def create_llm(model_type: str = "general", **kwargs) -> ChatOllama:
     model_map = {
         "general": model_general,
         "code": model_code,
+        "extraction": model_extraction,
     }
     
     model_name = model_map.get(model_type, model_general)
     
     # Build auth tuple if credentials provided
     if username and password:
-        kwargs['auth_tuple'] = (username, password)
+        # LangChain Ollama might not support 'auth' directly in some versions
+        # So we inject it into headers via client_kwargs for robustness
+        import base64
+        auth_str = f"{username}:{password}"
+        b64_auth = base64.b64encode(auth_str.encode()).decode()
+        
+        # Prepare headers
+        headers = kwargs.get('headers', {})
+        headers['Authorization'] = f"Basic {b64_auth}"
+        
+        # We REMOVE headers from kwargs to avoid duplication or confusion
+        # and instead pass them inside client_kwargs which ChatOllama uses for httpx.Client
+        if 'headers' in kwargs:
+            del kwargs['headers']
+            
+        client_kwargs = kwargs.get('client_kwargs', {})
+        client_kwargs['headers'] = headers
+        kwargs['client_kwargs'] = client_kwargs
+        
+        # Also clean up auth if it was passed
+        if 'auth' in kwargs:
+             del kwargs['auth']
+             
         logger.info(f"🔐 Ollama authentication enabled for user: {username}")
     
     # Add SQL Logger Callback if available
@@ -475,7 +506,7 @@ def print_info(message: str):
 # ============================================================================
 if __name__ == "__main__":
     # Test module
-    print_section_header("DevMind AI - Agent Base Module Test", "🧪")
+    print_section_header("Yaver AI - Agent Base Module Test", "🧪")
     
     config = get_config()
     print_success(f"Config loaded: {config.ollama.model_general}")

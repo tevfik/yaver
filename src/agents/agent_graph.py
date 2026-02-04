@@ -1,5 +1,5 @@
 """
-Graph Database Manager for DevMind AI
+Graph Database Manager for Yaver AI
 Handles code graph storage and retrieval using Neo4j.
 """
 
@@ -8,7 +8,7 @@ from neo4j import GraphDatabase
 import logging
 from .config import get_config
 
-logger = logging.getLogger("devmind_cli")
+logger = logging.getLogger("yaver_cli")
 
 class GraphManager:
     """

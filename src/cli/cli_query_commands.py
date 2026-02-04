@@ -2,9 +2,9 @@
 CLI commands for unified memory query interface.
 
 Commands:
-- devmind query "question"     → Multi-source semantic search
-- devmind analyze "problem"    → Structural code analysis + recommendations
-- devmind insights             → Code quality report
+- yaver query "question"     → Multi-source semantic search
+- yaver analyze "problem"    → Structural code analysis + recommendations
+- yaver insights             → Code quality report
 """
 
 import json
@@ -34,7 +34,7 @@ def cmd_query(args: argparse.Namespace) -> None:
     current_repo = state.get_current_repo()
 
     if not current_repo:
-        console.print("[red]Error: No repository context. Run 'devmind status' to set context.[/red]")
+        console.print("[red]Error: No repository context. Run 'yaver status' to set context.[/red]")
         return
 
     # Initialize combined memory interface
@@ -85,7 +85,7 @@ def cmd_inspect(args: argparse.Namespace) -> None:
     current_repo = state.get_current_repo()
 
     if not current_repo:
-        console.print("[red]Error: No repository context. Run 'devmind status' to set context.[/red]")
+        console.print("[red]Error: No repository context. Run 'yaver status' to set context.[/red]")
         return
 
     # Initialize combined memory interface
@@ -135,13 +135,13 @@ def cmd_insights(args: argparse.Namespace) -> None:
     current_repo = state.get_current_repo()
 
     if not current_repo:
-        console.print("[red]Error: No repository context. Run 'devmind status' to set context.[/red]")
+        console.print("[red]Error: No repository context. Run 'yaver status' to set context.[/red]")
         return
 
     # Analyze codebase
     try:
         analyzer = create_analyzer(current_repo.project_type or "python", 
-                                  current_repo.repo_id or "devmind",
+                                  current_repo.repo_id or "yaver",
                                   Path(current_repo.local_path))
         graph = analyzer.analyze()
         provider = CodeIntelligenceProvider(graph)

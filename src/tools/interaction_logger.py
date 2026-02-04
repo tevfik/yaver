@@ -17,7 +17,7 @@ def get_config():
     """Get config from onboarding"""
     return get_config_dict()
 
-logger = logging.getLogger("devmind.interaction")
+logger = logging.getLogger("yaver.interaction")
 
 class InteractionDB:
     """SQLite Database manager for LLM interactions"""

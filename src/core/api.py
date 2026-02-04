@@ -1,5 +1,5 @@
 """
-DevMind AI - FastAPI Service
+Yaver AI - FastAPI Service
 Exposes the workflow capabilities as a REST API.
 Updated to use the new AgentEngine.
 """
@@ -26,7 +26,7 @@ logger = setup_logger()
 
 # Initialize FastAPI
 app = FastAPI(
-    title="DevMind AI Service",
+    title="Yaver AI Service",
     description="AI-Powered Development Assistant API",
     version="2.0.0"
 )
@@ -91,7 +91,7 @@ manager = ConnectionManager()
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "service": "devmind-python-v2"}
+    return {"status": "healthy", "service": "yaver-python-v2"}
 
 @app.post("/api/task", response_model=TaskResponse)
 async def submit_task(req: TaskRequest):
@@ -219,7 +219,7 @@ async def submit_task_sync(req: TaskRequest):
             repo_path = req.repo_path or req.repo_url or '.'
             
             # Construct state for GitAnalyzer
-            state: DevMindState = {
+            state: YaverState = {
                 'user_request': actual_task,
                 'repo_path': repo_path,
                 'repo_url': req.repo_url,
@@ -322,7 +322,7 @@ async def run_agent_task(req: TaskRequest):
                 "data": None
             })
             
-            state: DevMindState = {
+            state: YaverState = {
                 'user_request': actual_task,
                 'repo_path': req.repo_path or req.repo_url or '.',
                 'repo_url': req.repo_url,

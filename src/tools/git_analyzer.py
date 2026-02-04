@@ -81,6 +81,39 @@ class GitAnalyzer:
             return result.stdout.strip()
         except Exception:
             return None
+
+    def get_current_commit(self) -> Optional[str]:
+        """Get current commit hash"""
+        if not self.is_git_repo:
+            return None
+        
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=self.repo_path,
+                capture_output=True,
+                text=True
+            )
+            
+            return result.stdout.strip()
+        except Exception:
+            return None
+    
+    def get_changed_files_since(self, commit_hash: str) -> List[str]:
+        """Get list of files changed since a specific commit"""
+        if not self.is_git_repo:
+            return []
+            
+        try:
+            result = subprocess.run(
+                ["git", "diff", "--name-only", commit_hash],
+                cwd=self.repo_path,
+                capture_output=True,
+                text=True
+            )
+            return [f for f in result.stdout.splitlines() if f.strip()]
+        except Exception:
+            return []
     
     def get_remotes(self) -> List[str]:
         """Get configured remotes"""

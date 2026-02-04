@@ -4,7 +4,7 @@
 
 ```bash
 pip install -e .
-devmind chat
+yaver chat
 ```
 
 That's it. Everything works out of the box.
@@ -25,47 +25,47 @@ That's it. Everything works out of the box.
 
 ```bash
 # Start interactive chat
-devmind chat
+yaver chat
 
 # Analyze a repository
-devmind analyze <repo_path>
+yaver analyze <repo_path>
 
 # Generate git commit message
-devmind commit
+yaver commit
 
 # Solve tasks end-to-end
-devmind solve "Fix bug in auth module"
+yaver solve "Fix bug in auth module"
 
 # Edit files with AI
-devmind edit "Add type hints" --file src/app.py
+yaver edit "Add type hints" --file src/app.py
 
 # Explain shell commands
-devmind explain "grep -r pattern ."
+yaver explain "grep -r pattern ."
 
 # Generate shell commands
-devmind suggest "find all python files"
+yaver suggest "find all python files"
 
 # Query repository
-devmind query status
-devmind query graph <repo>
+yaver query status
+yaver query graph <repo>
 ```
 
 ## Installation Options
 
 ### Option 1: From Source (Full Control)
 ```bash
-cd devmind
+cd yaver
 pip install -e .
 ```
 
 ### Option 2: From GitHub (Latest)
 ```bash
-pip install git+https://github.com/tevfik/devmind.git
+pip install git+https://github.com/tevfik/yaver.git
 ```
 
 ### Option 3: PyPI (When available)
 ```bash
-pip install devmind
+pip install yaver
 ```
 
 ## Requirements
@@ -79,7 +79,7 @@ pip install devmind
 ## First Run
 
 ```bash
-devmind chat
+yaver chat
 ```
 
 This starts an interactive session where you can:
@@ -107,14 +107,14 @@ NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=password
 
 # API Settings
-DEVMIND_API_PORT=8000
+YAVER_API_PORT=8000
 ```
 
 ## Quick Examples
 
 ### Example 1: Analyze Your Repository
 ```bash
-devmind analyze .
+yaver analyze .
 ```
 
 Output shows:
@@ -125,11 +125,11 @@ Output shows:
 
 ### Example 2: Get AI Help with Code
 ```bash
-devmind chat
+yaver chat
 > Analyze src/auth.py and suggest improvements
 ```
 
-DevMind will:
+Yaver will:
 1. Read the file
 2. Analyze using AI
 3. Suggest improvements with code snippets
@@ -137,17 +137,17 @@ DevMind will:
 ### Example 3: Generate Commit Message
 ```bash
 git add .
-devmind commit
+yaver commit
 ```
 
 Automatically generates meaningful commit message from staged changes.
 
 ### Example 4: End-to-End Task Solving
 ```bash
-devmind solve "Add authentication to the API" --file src/api.py
+yaver solve "Add authentication to the API" --file src/api.py
 ```
 
-DevMind will:
+Yaver will:
 1. Create a feature branch
 2. Analyze the code
 3. Implement the feature
@@ -185,14 +185,14 @@ docker run \
 ```
 
 ### Memory issues on large repos
-DevMind handles large repositories efficiently by:
+Yaver handles large repositories efficiently by:
 - Chunking code into semantic units
 - Using vector search instead of full search
 - Building incremental code graphs
 
 For very large repos (>100k files), use:
 ```bash
-devmind analyze . --sampling=0.1  # Analyze 10% of files
+yaver analyze . --sampling=0.1  # Analyze 10% of files
 ```
 
 ## What Each Component Does
@@ -236,7 +236,7 @@ devmind analyze . --sampling=0.1  # Analyze 10% of files
 ## Architecture
 
 ```
-DevMind
+Yaver
 ├── Agent Framework (LangChain)
 │   ├── Query Analyzer
 │   ├── Task Planner
@@ -307,4 +307,4 @@ MIT License - Feel free to use and modify
 
 ---
 
-**DevMind: Your AI development assistant - one install, everything works.**
+**Yaver: Your AI development assistant - one install, everything works.**

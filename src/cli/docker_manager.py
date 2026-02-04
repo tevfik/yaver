@@ -1,4 +1,4 @@
-"""Docker services management for DevMind"""
+"""Docker services management for Yaver"""
 
 import subprocess
 import sys
@@ -9,7 +9,7 @@ import time
 
 
 class DockerManager:
-    """Manage Docker services for DevMind"""
+    """Manage Docker services for Yaver"""
 
     def __init__(self):
         # Get project root (go up from src/cli to project root)
@@ -270,11 +270,11 @@ class DockerManager:
         print("\n" + "=" * 60)
         print("⚡ Quick Commands".center(60))
         print("=" * 60)
-        print("\n  devmind docker start      - Start all services")
-        print("  devmind docker stop       - Stop all services")
-        print("  devmind docker status     - Check service status")
-        print("  devmind docker logs       - View service logs")
-        print("  devmind docker restart    - Restart services\n")
+        print("\n  yaver docker start      - Start all services")
+        print("  yaver docker stop       - Stop all services")
+        print("  yaver docker status     - Check service status")
+        print("  yaver docker logs       - View service logs")
+        print("  yaver docker restart    - Restart services\n")
         print("=" * 60 + "\n")
 
 
@@ -283,7 +283,7 @@ def manage_docker_interactive():
     manager = DockerManager()
 
     print("\n" + "=" * 60)
-    print("🐳 DevMind Docker Manager".center(60))
+    print("🐳 Yaver Docker Manager".center(60))
     print("=" * 60 + "\n")
 
     # Check prerequisites

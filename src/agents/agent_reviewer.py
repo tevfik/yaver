@@ -8,11 +8,11 @@ from langchain_core.output_parsers import StrOutputParser
 from pydantic import BaseModel, Field
 
 
-from devmind_cli.agent_base import create_llm, print_section_header, print_info, print_warning, print_success, load_file
-from devmind_cli.config import get_config
-from devmind_cli.prompts import REVIEWER_USER_TEMPLATE
+from yaver_cli.agent_base import create_llm, print_section_header, print_info, print_warning, print_success, load_file
+from yaver_cli.config import get_config
+from yaver_cli.prompts import REVIEWER_USER_TEMPLATE
 
-logger = logging.getLogger("devmind_cli")
+logger = logging.getLogger("yaver_cli")
 
 class ReviewResult(BaseModel):
     is_valid: bool = Field(description="Whether the code is valid and safe to use")

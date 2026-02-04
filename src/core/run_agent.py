@@ -55,7 +55,7 @@ def run_coding_task(task_description: str, output_file: str = None, use_git: boo
                  console.print(f"[dim]{str(event.data['output'])[:200]}...[/dim]")
 
     # Run Engine
-    print_section_header("DevMind AI Engine Starting", "🚀")
+    print_section_header("Yaver AI Engine Starting", "🚀")
     engine = AgentEngine(use_sandbox=True)
     result = engine.run(task_description, on_event=cli_handler)
 
@@ -107,7 +107,7 @@ def run_coding_task(task_description: str, output_file: str = None, use_git: boo
                 print_section_header("Step 5: Git Integration", "🐙")
                 branch = git_ops.create_pr_branch(task_description)
                 if branch:
-                    git_ops.commit_changes(output_file, f"feat: {task_description[:50]}...\n\nImplemented by DevMind AI Agent.")
+                    git_ops.commit_changes(output_file, f"feat: {task_description[:50]}...\n\nImplemented by Yaver AI Agent.")
                     console.print(f"[bold green]✅ Changes committed to branch '{branch}'[/bold green]")
                     console.print("Ready for Pull Request.")
 
@@ -117,7 +117,7 @@ def run_coding_task(task_description: str, output_file: str = None, use_git: boo
          console.print("\n[dim]No output file specified, results shown in log.[/dim]")
 
 def main():
-    parser = argparse.ArgumentParser(description="DevMind Simple Runner")
+    parser = argparse.ArgumentParser(description="Yaver Simple Runner")
     parser.add_argument("task", help="Description of the coding task")
     parser.add_argument("--output", "-o", help="File to save the output code to")
     parser.add_argument("--git", action="store_true", help="Commit changes to a new git branch")

@@ -1,5 +1,5 @@
 """
-Configuration Management for DevMind AI
+Configuration Management for Yaver AI
 Combines best practices from IntelligentAgent and CodingAgent projects
 """
 
@@ -12,10 +12,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class OllamaConfig(BaseSettings):
     """Ollama LLM configuration"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(".env", str(Path.home() / ".yaver" / ".env")),
+        env_file_encoding="utf-8", 
+        extra="ignore"
+    )
     base_url: str = Field(default="http://localhost:11434", validation_alias="OLLAMA_BASE_URL")
     model_general: str = Field(default="llama3.2:3b-instruct-q4_K_M", validation_alias="OLLAMA_MODEL_GENERAL")
     model_code: str = Field(default="qwen2.5-coder:7b-instruct-q4_K_M", validation_alias="OLLAMA_MODEL_CODE")
+    model_extraction: str = Field(default="qwen2.5-coder:7b-instruct-q4_K_M", validation_alias="OLLAMA_MODEL_EXTRACTION")
     model_embedding: str = Field(default="nomic-embed-text:latest", validation_alias="OLLAMA_MODEL_EMBEDDING")
     username: Optional[str] = Field(default=None, validation_alias="OLLAMA_USERNAME")
     password: Optional[str] = Field(default=None, validation_alias="OLLAMA_PASSWORD")
@@ -27,7 +32,7 @@ class ProjectConfig(BaseSettings):
     api_base_url: str = Field(default="http://localhost:8080/api/v1", validation_alias="API_BASE_URL")
     default_output_dir: str = Field(default="./output", validation_alias="DEFAULT_OUTPUT_DIR")
     enable_backup: bool = Field(default=True, validation_alias="ENABLE_BACKUP")
-    backup_dir: str = Field(default="~/.devmind/backups", validation_alias="BACKUP_DIR")
+    backup_dir: str = Field(default="~/.yaver/backups", validation_alias="BACKUP_DIR")
     max_iterations: int = Field(default=5, validation_alias="MAX_ITERATIONS")
     max_files_per_iteration: int = Field(default=10, validation_alias="MAX_FILES_PER_ITERATION")
 
@@ -62,17 +67,32 @@ class VectorDBConfig(BaseSettings):
 
 class QdrantConfig(BaseSettings):
     """Qdrant vector database configuration"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(".env", str(Path.home() / ".yaver" / ".env")),
+        env_file_encoding="utf-8", 
+        extra="ignore"
+    )
     host: Optional[str] = Field(default="localhost", validation_alias="QDRANT_HOST")
     port: int = Field(default=6333, validation_alias="QDRANT_PORT")
     path: Optional[str] = Field(default=None, validation_alias="QDRANT_PATH")
-    collection: str = Field(default="devmind_memory", validation_alias="QDRANT_COLLECTION")
+    collection: str = Field(default="yaver_memory", validation_alias="QDRANT_COLLECTION")
     use_local: bool = Field(default=False, validation_alias="QDRANT_USE_LOCAL")
+
+
+class LeannConfig(BaseSettings):
+    """Leann vector database configuration (experimental)"""
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    # Base path for storing indexes. If None, defaults to ~/.yaver/leann_indexes
+    base_path: Optional[str] = Field(default=None, validation_alias="LEANN_BASE_PATH")
 
 
 class Neo4jConfig(BaseSettings):
     """Neo4j graph database configuration"""
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(".env", str(Path.home() / ".yaver" / ".env")),
+        env_file_encoding="utf-8", 
+        extra="ignore"
+    )
     uri: str = Field(default="bolt://localhost:7687", validation_alias="NEO4J_URI")
     username: str = Field(default="neo4j", validation_alias="NEO4J_USERNAME")
     password: str = Field(default="password", validation_alias="NEO4J_PASSWORD")
@@ -91,7 +111,7 @@ class LoggingConfig(BaseSettings):
     """Logging configuration"""
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
     log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
-    log_file: str = Field(default="devmind_cli/logs/devmind.log", validation_alias="LOG_FILE")
+    log_file: str = Field(default="yaver_cli/logs/yaver.log", validation_alias="LOG_FILE")
     enable_rich_logging: bool = Field(default=True, validation_alias="ENABLE_RICH_LOGGING")
 
 
@@ -113,20 +133,22 @@ class TaskConfig(BaseSettings):
 
 class FeatureConfig(BaseSettings):
     """Advanced features toggles"""
-    enable_architecture_diagram: bool = Field(default=True, env="ENABLE_ARCHITECTURE_DIAGRAM")
-    enable_documentation_gen: bool = Field(default=True, env="ENABLE_DOCUMENTATION_GEN")
-    enable_test_generation: bool = Field(default=False, env="ENABLE_TEST_GENERATION")
-    enable_refactoring_suggestions: bool = Field(default=True, env="ENABLE_REFACTORING_SUGGESTIONS")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    enable_architecture_diagram: bool = Field(default=True, validation_alias="ENABLE_ARCHITECTURE_DIAGRAM")
+    enable_documentation_gen: bool = Field(default=True, validation_alias="ENABLE_DOCUMENTATION_GEN")
+    enable_test_generation: bool = Field(default=False, validation_alias="ENABLE_TEST_GENERATION")
+    enable_refactoring_suggestions: bool = Field(default=True, validation_alias="ENABLE_REFACTORING_SUGGESTIONS")
 
 
 class PromptsConfig(BaseSettings):
     """Configuration for Prompt files"""
-    coder_system_prompt_path: str = Field(default="devmind_cli/prompts/coder_system.md", env="PROMPT_CODER_SYSTEM_PATH")
-    reviewer_system_prompt_path: str = Field(default="devmind_cli/prompts/reviewer_system.md", env="PROMPT_REVIEWER_SYSTEM_PATH")
-    planner_system_prompt_path: str = Field(default="devmind_cli/prompts/planner_system.md", env="PROMPT_PLANNER_SYSTEM_PATH")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    coder_system_prompt_path: str = Field(default="yaver_cli/prompts/coder_system.md", validation_alias="PROMPT_CODER_SYSTEM_PATH")
+    reviewer_system_prompt_path: str = Field(default="yaver_cli/prompts/reviewer_system.md", validation_alias="PROMPT_REVIEWER_SYSTEM_PATH")
+    planner_system_prompt_path: str = Field(default="yaver_cli/prompts/planner_system.md", validation_alias="PROMPT_PLANNER_SYSTEM_PATH")
 
 
-class DevMindConfig(BaseSettings):
+class YaverConfig(BaseSettings):
     """Main configuration class"""
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -151,14 +173,14 @@ class DevMindConfig(BaseSettings):
 
 
 # Global config instance
-_config: Optional[DevMindConfig] = None
+_config: Optional[YaverConfig] = None
 
 
-def get_config() -> DevMindConfig:
+def get_config() -> YaverConfig:
     """Get or create global configuration instance"""
     global _config
     if _config is None:
-        _config = DevMindConfig()
+        _config = YaverConfig()
         
         # Create necessary directories
         os.makedirs(Path(_config.project.default_output_dir).expanduser(), exist_ok=True)
@@ -169,7 +191,7 @@ def get_config() -> DevMindConfig:
     return _config
 
 
-def reload_config() -> DevMindConfig:
+def reload_config() -> YaverConfig:
     """Reload configuration from environment"""
     global _config
     _config = None

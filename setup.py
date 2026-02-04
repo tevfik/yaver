@@ -1,18 +1,27 @@
 #!/usr/bin/env python3
 """
-DevMind AI - Fully Functional Development Assistant
+Yaver AI - Fully Functional Development Assistant
 
 Single install: pip install -e .
-Then use: devmind chat
+Then use: yaver chat
 
 All integrations included:
 - Qdrant vector database for semantic search
 - Neo4j for code graph analysis  
-- Ollama for local LLM
+- Ollama for local LLM (multiple specialized models)
 - LangChain for orchestration
 - ChromaDB for memory
 - FastAPI for API server
 - Rich for beautiful terminal UI
+
+Configuration via ~/.yaver/.env:
+  OLLAMA_BASE_URL=https://ollama.bezg.in
+  OLLAMA_MODEL_GENERAL=nemotron-3-nano:30b (Chat, general queries)
+  OLLAMA_MODEL_CODE=deepseek-coder-v2:16b (Code analysis)
+  OLLAMA_MODEL_EXTRACTION=qwen2.5-coder:7b (Fact extraction - faster)
+  OLLAMA_MODEL_EMBEDDING=nomic-embed-text (Vector embeddings)
+  OLLAMA_USERNAME=admin (Optional: For remote Ollama)
+  OLLAMA_PASSWORD=password (Optional: For remote Ollama)
 """
 
 from setuptools import setup, find_packages
@@ -95,18 +104,18 @@ else:
     ]
 
 setup(
-    name="devmind",
-    version="1.0.0",
+    name="yaver",
+    version="1.1.0",
     author="tevfik.kadioglu",
     author_email="tevfik.kadioglu@gmail.com",
     description="Fully functional AI-powered development assistant with Qdrant, Neo4j, Ollama, LangChain",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/tevfik/devmind",
+    url="https://github.com/tevfik/yaver",
     project_urls={
-        "Bug Tracker": "https://github.com/tevfik/devmind/issues",
-        "Documentation": "https://github.com/tevfik/devmind",
-        "Source Code": "https://github.com/tevfik/devmind",
+        "Bug Tracker": "https://github.com/tevfik/yaver/issues",
+        "Documentation": "https://github.com/tevfik/yaver",
+        "Source Code": "https://github.com/tevfik/yaver",
     },
     packages=find_packages(where="src"),
     package_dir={"": "src"},
@@ -115,7 +124,7 @@ setup(
     install_requires=requirements,
     entry_points={
         "console_scripts": [
-            "devmind=cli.cli:main",
+            "yaver=cli.cli:main",
         ],
     },
     classifiers=[

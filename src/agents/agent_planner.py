@@ -5,11 +5,11 @@ import logging
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-from devmind_cli.agent_base import create_llm, load_file
-from devmind_cli.config import get_config
-from devmind_cli.prompts import PLANNER_USER_TEMPLATE
+from yaver_cli.agent_base import create_llm, load_file
+from yaver_cli.config import get_config
+from yaver_cli.prompts import PLANNER_USER_TEMPLATE
 
-logger = logging.getLogger("devmind_cli")
+logger = logging.getLogger("yaver_cli")
 
 class PlannerAgent:
     """Agent responsible for creating implementation plans"""
@@ -24,7 +24,7 @@ class PlannerAgent:
         prompt_path = getattr(self.config.prompts, 'planner_system_prompt_path', None)
         # Fallback if config is missing the path field yet
         if not prompt_path:
-             prompt_path = "devmind_cli/prompts/planner_system.md"
+             prompt_path = "yaver_cli/prompts/planner_system.md"
 
         content = load_file(prompt_path)
         if content:

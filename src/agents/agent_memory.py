@@ -1,5 +1,5 @@
 """
-Memory Management Agent for DevMind AI
+Memory Management Agent for Yaver AI
 Handles long-term and short-term memory using Qdrant vector database.
 Integrates with Neo4j Graph Manager for structural memory.
 """
@@ -23,8 +23,8 @@ from qdrant_client.models import (
 )
 from langchain_ollama import OllamaEmbeddings
 
-from devmind_cli.agent_base import logger, get_config
-from devmind_cli.agent_graph import GraphManager
+from yaver_cli.agent_base import logger, get_config
+from yaver_cli.agent_graph import GraphManager
 
 
 class MemoryType(str, Enum):
@@ -50,7 +50,7 @@ class MemoryEntry:
 
 class MemoryManager:
     """
-    Unified Memory System for DevMind AI.
+    Unified Memory System for Yaver AI.
     
     1. Fast/Episodic Memory (Qdrant):
        - Stores interaction logs, task results, and code snippets for semantic search.
@@ -91,7 +91,7 @@ class MemoryManager:
         
         # Add authentication if configured
         if config.ollama.username and config.ollama.password:
-            embedding_kwargs["auth_tuple"] = (config.ollama.username, config.ollama.password)
+            embedding_kwargs["client_kwargs"] = {"auth": (config.ollama.username, config.ollama.password)}
             logger.info(f"🔐 Ollama embeddings with basic auth enabled")
         
         self.embeddings = OllamaEmbeddings(**embedding_kwargs)

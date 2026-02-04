@@ -1,5 +1,5 @@
 """
-Session Manager for DevMind CLI
+Session Manager for Yaver CLI
 Handles user sessions with tagging and context switching.
 """
 import os
@@ -9,13 +9,13 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 import uuid
 
-SESSION_DIR = Path.home() / ".devmind"
+SESSION_DIR = Path.home() / ".yaver"
 SESSIONS_FILE = SESSION_DIR / "sessions.json"
 ACTIVE_SESSION_FILE = SESSION_DIR / ".active_session"
 
 
 class SessionManager:
-    """Manage DevMind sessions with tags and metadata"""
+    """Manage Yaver sessions with tags and metadata"""
     
     def __init__(self):
         """Initialize session manager"""

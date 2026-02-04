@@ -1,4 +1,4 @@
-"""Interactive onboarding and setup wizard for DevMind"""
+"""Interactive onboarding and setup wizard for Yaver"""
 
 import os
 import json
@@ -7,12 +7,12 @@ from typing import Dict, Optional
 from datetime import datetime
 
 
-class DevMindSetupWizard:
-    """Interactive setup wizard for DevMind configuration"""
+class YaverSetupWizard:
+    """Interactive setup wizard for Yaver configuration"""
 
     def __init__(self):
         # Store config in user's home directory
-        self.config_dir = Path.home() / ".devmind"
+        self.config_dir = Path.home() / ".yaver"
         self.env_file = self.config_dir / ".env"
         self.config_file = self.config_dir / "config.json"
         self.config_dir.mkdir(exist_ok=True)
@@ -20,9 +20,9 @@ class DevMindSetupWizard:
     def print_header(self):
         """Print welcome header"""
         print("\n" + "=" * 60)
-        print("🚀 DevMind Setup Wizard".center(60))
+        print("🚀 Yaver Setup Wizard".center(60))
         print("=" * 60 + "\n")
-        print("Let's configure DevMind for your first time!\n")
+        print("Let's configure Yaver for your first time!\n")
 
     def print_section(self, title: str):
         """Print section header"""
@@ -43,11 +43,11 @@ class DevMindSetupWizard:
         """Basic URL validation"""
         return url.startswith("http://") or url.startswith("https://")
 
-    def fetch_ollama_models(self, url: str) -> list:
+    def fetch_ollama_models(self, url: str, auth: tuple = None) -> list:
         """Fetch available models from Ollama server"""
         try:
             import requests
-            response = requests.get(f"{url}/api/tags", timeout=3)
+            response = requests.get(f"{url}/api/tags", timeout=3, auth=auth)
             if response.status_code == 200:
                 data = response.json()
                 models = [m["name"] for m in data.get("models", [])]
@@ -93,7 +93,8 @@ class DevMindSetupWizard:
         print("\n🔐 Does your Ollama server require authentication?")
         use_auth = self.input_with_default("Use basic authentication? (y/n)", "n").lower() == "y"
         
-        config = {"OLLAMA_URL": url}
+        config = {"OLLAMA_BASE_URL": url}
+        auth = None
         
         if use_auth:
             username = self.input_with_default("Ollama username", "")
@@ -101,11 +102,12 @@ class DevMindSetupWizard:
             if username and password:
                 config["OLLAMA_USERNAME"] = username
                 config["OLLAMA_PASSWORD"] = password
+                auth = (username, password)
                 print("✅ Authentication credentials configured\n")
 
         # Try to fetch available models
         print("\n🔄 Fetching available models from Ollama...")
-        models = self.fetch_ollama_models(url)
+        models = self.fetch_ollama_models(url, auth)
 
         if models:
             print(f"\n✅ Found {len(models)} available models\n")
@@ -122,10 +124,10 @@ class DevMindSetupWizard:
             )
             
             role_map = {
-                "1": ("OLLAMA_MODEL", "General Purpose LLM", "for chat and reasoning"),
-                "2": ("OLLAMA_MODEL_CODER", "Code Specialist LLM", "for code generation"),
+                "1": ("OLLAMA_MODEL_GENERAL", "General Purpose LLM", "for chat and reasoning"),
+                "2": ("OLLAMA_MODEL_CODE", "Code Specialist LLM", "for code generation"),
                 "3": ("OLLAMA_MODEL_TOOL", "Tool Calling LLM", "for function calling"),
-                "4": ("OLLAMA_MODEL_EMBED", "Embedding Model", "for RAG/semantic search"),
+                "4": ("OLLAMA_MODEL_EMBEDDING", "Embedding Model", "for RAG/semantic search"),
             }
             
             for role_num in roles_input.split(","):
@@ -136,27 +138,45 @@ class DevMindSetupWizard:
                     config[config_key] = model
             
             # Default: if no roles selected, use first model for general purpose
-            if "OLLAMA_MODEL" not in config:
-                config["OLLAMA_MODEL"] = models[0]
+            if "OLLAMA_MODEL_GENERAL" not in config:
+                config["OLLAMA_MODEL_GENERAL"] = models[0]
         else:
             print("\n⚠️  Could not fetch models from Ollama server.")
             print("   Make sure Ollama is running at the URL you provided.\n")
             model = self.input_with_default(
                 "Enter model name manually (mistral, llama2, neural-chat, etc)", "mistral"
             )
-            config["OLLAMA_MODEL"] = model
+            config["OLLAMA_MODEL_GENERAL"] = model
 
         return config
 
-    def setup_qdrant(self) -> Dict:
-        """Setup Qdrant (vector database) configuration"""
-        self.print_section("Qdrant Configuration (Vector Database)")
-        print("Qdrant stores vector embeddings for semantic search.")
+    def setup_memory(self) -> Dict:
+        """Setup Memory (Vector Database) configuration"""
+        self.print_section("Memory Configuration (Vector Database)")
+        print("Yaver uses vector database for semantic memory.")
+        print("Options:")
+        print("  1. Qdrant (Standard): Robust, feature-rich vector database (Requires Docker)")
+        print("  2. LEANN (Experimental): Lightweight, local, Python-native (No Docker required)")
+        print("  3. ChromaDB (Local): Persistent local vector database (No Docker required)\n")
+
+        mem_choice = self.input_with_default("Select Memory Type (1, 2 or 3)", "1")
+        
+        if mem_choice == "2":
+            print("\n✅ Selected LEANN (Local Efficient ANN)")
+            return {"MEMORY_TYPE": "leann"}
+        elif mem_choice == "3":
+            print("\n✅ Selected ChromaDB (Local Persistent Storage)")
+            return {"MEMORY_TYPE": "chroma"}
+        
+        # Qdrant Setup
+        print("\nConfiguring Qdrant...")
         print("Options:")
         print("  1. Local (default): Uses local Qdrant server in Docker")
         print("  2. Cloud: Uses Qdrant Cloud service\n")
 
         choice = self.input_with_default("Choice (1 or 2)", "1")
+        
+        base_config = {"MEMORY_TYPE": "qdrant"}
 
         if choice == "2":
             url = self.input_with_default(
@@ -164,14 +184,16 @@ class DevMindSetupWizard:
                 "https://xxx-x-y-z-xxxxx.eu-central1-0.qdb.cloud",
             )
             api_key = self.input_with_default("Qdrant API Key (keep it secret!)")
-            return {
+            base_config.update({
                 "QDRANT_URL": url,
                 "QDRANT_API_KEY": api_key,
                 "QDRANT_MODE": "cloud",
-            }
+            })
         else:
             url = self.input_with_default("Qdrant local server URL", "http://localhost:6333")
-            return {"QDRANT_URL": url, "QDRANT_MODE": "local"}
+            base_config.update({"QDRANT_URL": url, "QDRANT_MODE": "local"})
+            
+        return base_config
 
     def setup_neo4j(self) -> Dict:
         """Setup Neo4j (graph database) configuration"""
@@ -196,7 +218,7 @@ class DevMindSetupWizard:
             return {
                 "NEO4J_URI": "neo4j://localhost:7687",
                 "NEO4J_USER": "neo4j",
-                "NEO4J_PASSWORD": "devmind123",
+                "NEO4J_PASSWORD": "yaver123",
             }
 
     def setup_chromadb(self) -> Dict:
@@ -205,7 +227,7 @@ class DevMindSetupWizard:
         print("ChromaDB stores conversation history and learned patterns locally.\n")
 
         persist_dir = self.input_with_default(
-            "Persistence directory", ".devmind/chroma_db"
+            "Persistence directory", ".yaver/chroma_db"
         )
 
         return {"CHROMA_PERSIST_DIR": persist_dir}
@@ -247,7 +269,7 @@ class DevMindSetupWizard:
     def save_env_file(self, config: Dict) -> bool:
         """Save configuration to .env file"""
         try:
-            env_content = "# DevMind Configuration\n"
+            env_content = "# Yaver Configuration\n"
             env_content += f"# Generated by setup wizard on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
             env_content += "# Edit this file manually if needed\n\n"
 
@@ -292,7 +314,7 @@ class DevMindSetupWizard:
 
         categories = {
             "🔧 Ollama": ["OLLAMA_URL", "OLLAMA_MODEL"],
-            "📦 Qdrant": ["QDRANT_URL", "QDRANT_MODE", "QDRANT_API_KEY"],
+            "🧠 Memory": ["MEMORY_TYPE", "QDRANT_URL", "QDRANT_MODE", "LEANN_BASE_PATH"],
             "📊 Neo4j": ["NEO4J_URI", "NEO4J_USER"],
             "💾 ChromaDB": ["CHROMA_PERSIST_DIR"],
         }
@@ -318,16 +340,16 @@ class DevMindSetupWizard:
             for k in optional_keys:
                 print(f"    • {k}: {config[k]}")
 
-        print(f"\n✅ Setup complete! You can now use DevMind.\n")
+        print(f"\n✅ Setup complete! You can now use Yaver.\n")
         print("Next steps:")
         print("  1. Start services: docker-compose up -d (in docker/ directory)")
-        print("  2. Run: devmind status")
-        print("  3. Try: devmind chat\n")
+        print("  2. Run: yaver status")
+        print("  3. Try: yaver chat\n")
         
         # Offer Docker setup
         print("Optional:")
-        print("  • Start Docker: devmind docker start")
-        print("  • Check status: devmind docker status\n")
+        print("  • Start Docker: yaver docker start")
+        print("  • Check status: yaver docker status\n")
 
     def run(self, skip_intro: bool = False) -> Dict:
         """Run the complete setup wizard"""
@@ -347,7 +369,7 @@ class DevMindSetupWizard:
         # Run setup sections
         config = {}
         config.update(self.setup_ollama())
-        config.update(self.setup_qdrant())
+        config.update(self.setup_memory())
         config.update(self.setup_neo4j())
         config.update(self.setup_chromadb())
         config.update(self.setup_optional_services())
@@ -362,8 +384,8 @@ class DevMindSetupWizard:
 
 
 def check_and_setup_if_needed():
-    """Check if DevMind is configured, if not run setup"""
-    wizard = DevMindSetupWizard()
+    """Check if Yaver is configured, if not run setup"""
+    wizard = YaverSetupWizard()
 
     # Check if already configured
     if wizard.config_file.exists():
@@ -396,7 +418,7 @@ def check_and_setup_if_needed():
 
     # Need interactive setup
     print("\n" + "=" * 60)
-    print("DevMind - First Time Setup Required".center(60))
+    print("Yaver - First Time Setup Required".center(60))
     print("=" * 60)
 
     return wizard.run(skip_intro=True)
@@ -408,5 +430,5 @@ def get_config() -> Dict:
 
 
 if __name__ == "__main__":
-    wizard = DevMindSetupWizard()
+    wizard = YaverSetupWizard()
     wizard.run()

@@ -8,8 +8,8 @@ from rich.prompt import Confirm
 from rich.panel import Panel
 from pathlib import Path
 
-from devmind_cli.agent_coder import CoderAgent
-from devmind_cli.agent_base import setup_logger
+from yaver_cli.agent_coder import CoderAgent
+from yaver_cli.agent_base import setup_logger
 
 console = Console()
 
@@ -39,7 +39,7 @@ def handle_edit(args):
             console.print(f"[bold red]Error reading file:[/bold red] {e}")
             return
 
-    console.print(Panel(f"[bold blue]File:[/bold blue] {file_path}\n[bold blue]Request:[/bold blue] {instructions}", title="DevMind Edit"))
+    console.print(Panel(f"[bold blue]File:[/bold blue] {file_path}\n[bold blue]Request:[/bold blue] {instructions}", title="Yaver Edit"))
 
     with console.status("[bold yellow]AI is working on your changes..."):
         coder_agent = CoderAgent()

@@ -1,6 +1,6 @@
 """
 Git Operations Module
-Handles branching, committing, and PR simulation for DevMind Agents.
+Handles branching, committing, and PR simulation for Yaver Agents.
 """
 import os
 import logging
@@ -8,16 +8,16 @@ from git import Repo, Actor
 from datetime import datetime
 import requests
 import re
-from devmind_cli.config import get_config
+from yaver_cli.config import get_config
 
-logger = logging.getLogger("devmind_cli")
+logger = logging.getLogger("yaver_cli")
 
 class GitOps:
     def __init__(self, repo_path: str = "."):
         self.repo_path = repo_path
         try:
             self.repo = Repo(repo_path)
-            self.actor = Actor("DevMind AI", "agent@devmind.ai")
+            self.actor = Actor("Yaver AI", "agent@yaver.ai")
         except Exception as e:
             logger.warning(f"Failed to initialize Git repo at {repo_path}: {e}")
             self.repo = None
@@ -29,7 +29,7 @@ class GitOps:
         # Sanitize branch name
         slug = "".join(c if c.isalnum() else "-" for c in task_name.lower())[:30]
         timestamp = datetime.now().strftime("%Y%m%d%H%M")
-        branch_name = f"devmind/feature/{slug}-{timestamp}"
+        branch_name = f"yaver/feature/{slug}-{timestamp}"
         
         try:
             current = self.repo.active_branch

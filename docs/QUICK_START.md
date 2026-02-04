@@ -1,17 +1,17 @@
-# DevMind - Quick Start Guide
+# Yaver - Quick Start Guide
 
 ## TL;DR - Start in 30 Seconds
 
 ```bash
 # 1. Clone
-git clone https://github.com/tevfik/devmind.git
-cd devmind
+git clone https://github.com/tevfik/yaver.git
+cd yaver
 
 # 2. Install (with all integrations: Qdrant, Neo4j, Ollama, LangChain, etc.)
-bash QUICK_INSTALL.sh
+bash docs/QUICK_INSTALL.sh
 
 # 3. Use
-devmind chat
+yaver chat
 ```
 
 Done. Everything works.
@@ -20,7 +20,7 @@ Done. Everything works.
 
 ## What Is This?
 
-DevMind is a fully functional AI development assistant:
+Yaver is a fully functional AI development assistant:
 - 🤖 LLM integration (Ollama, LangChain)
 - 🧠 Vector database (Qdrant)
 - 📊 Code graph analysis (Neo4j)
@@ -30,7 +30,7 @@ DevMind is a fully functional AI development assistant:
 
 **Single install**: `pip install -e .`
 **Everything included**: Qdrant, Neo4j, Ollama, etc.
-**Run immediately**: `devmind chat`
+**Run immediately**: `yaver chat`
 
 ---
 
@@ -38,7 +38,7 @@ DevMind is a fully functional AI development assistant:
 
 ### Option 1: Automatic Script
 ```bash
-bash QUICK_INSTALL.sh
+bash docs/QUICK_INSTALL.sh
 ```
 
 Automatically:
@@ -56,7 +56,7 @@ source venv/bin/activate
 pip install -e .
 
 # Run
-devmind chat
+yaver chat
 ```
 
 ---
@@ -64,26 +64,32 @@ devmind chat
 ## Commands
 
 ```bash
-# Interactive chat
-devmind chat
+# Deep Learn Repository (Recommended first step)
+yaver analyze . --type deep --project-id my-project
 
-# Analyze repository
-devmind analyze .
+# Autonomous Agent (Get recommendations)
+yaver agent analyze my-project
+
+# Interactive chat
+yaver chat
+
+# Lite Analysis (Overview)
+yaver analyze .
 
 # Generate commit message
-devmind commit
+yaver commit
 
 # Solve task (automatic branch, edit, PR)
-devmind solve "Add authentication"
+yaver solve "Add authentication"
 
 # Edit file
-devmind edit "Add type hints" --file src/app.py
+yaver edit "Add type hints" --file src/app.py
 
 # Explain shell commands
-devmind explain "grep -r pattern ."
+yaver explain "grep -r pattern ."
 
 # Suggest shell command
-devmind suggest "Find all python files"
+yaver suggest "Find all python files"
 ```
 
 ---
@@ -91,7 +97,7 @@ devmind suggest "Find all python files"
 ## First Use
 
 ```bash
-devmind chat
+yaver chat
 ```
 
 After running this command:
@@ -111,7 +117,7 @@ Example questions:
 
 ## Optional: Start Services
 
-DevMind works, but for better results:
+Yaver works, but for better results:
 
 ### 1. Ollama (Local LLM)
 ```bash
@@ -160,7 +166,7 @@ NEO4J_PASSWORD=password
 
 ## Troubleshooting
 
-### "devmind: command not found"
+### "yaver: command not found"
 ```bash
 # Is virtual environment active?
 source venv/bin/activate
@@ -170,7 +176,7 @@ pip install -e .
 ```
 
 ### "ImportError: No module named 'qdrant_client'"
-Normal. Will be installed later. DevMind continues working.
+Normal. Will be installed later. Yaver continues working.
 
 ### "Ollama not found"
 ```bash
@@ -207,7 +213,7 @@ Memory usage:
 ## Architecture
 
 ```
-DevMind
+Yaver
 ├── AI Agent (LangChain)
 │   ├── Query Analyzer
 │   ├── Task Planner
@@ -286,8 +292,8 @@ MIT - Use, modify, share
 | Task | Command | Time |
 |------|---------|------|
 | Install | `bash QUICK_INSTALL.sh` | 2-5 minutes |
-| Start | `devmind chat` | 1 second |
-| Analyze | `devmind analyze .` | 2-5 seconds |
+| Start | `yaver chat` | 1 second |
+| Analyze | `yaver analyze .` | 2-5 seconds |
 | Use LLM | Start Ollama | 1 minute |
 
-**DevMind: Single install, full power, works immediately.**
+**Yaver: Single install, full power, works immediately.**

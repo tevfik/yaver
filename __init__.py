@@ -1,3 +1,0 @@
-"""
-DevMind AI - Backend Package
-"""

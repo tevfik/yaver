@@ -1,4 +1,4 @@
-# Contributing to DevMind
+# Contributing to Yaver
 
 Contributions are welcome! Here's how to get started.
 
@@ -6,8 +6,8 @@ Contributions are welcome! Here's how to get started.
 
 ```bash
 # Clone and setup
-git clone https://github.com/tevfik/devmind.git
-cd devmind
+git clone https://github.com/tevfik/yaver.git
+cd yaver
 
 # Create virtual environment
 python3 -m venv venv

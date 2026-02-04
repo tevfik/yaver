@@ -1,10 +1,10 @@
 #!/bin/bash
-# DevMind - One Script Installation & Setup
+# Yaver - One Script Installation & Setup
 
 set -e
 
 echo "╔════════════════════════════════════════════════════════════╗"
-echo "║          DevMind AI - Full Installation                   ║"
+echo "║          Yaver AI - Full Installation                   ║"
 echo "║     All integrations (Qdrant, Neo4j, Ollama, etc)        ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
@@ -37,7 +37,7 @@ fi
 source venv/bin/activate
 
 echo ""
-echo "Installing DevMind with all integrations..."
+echo "Installing Yaver with all integrations..."
 echo "This includes: LangChain, Qdrant, Neo4j, Ollama, LanGraph, FastAPI, etc."
 echo ""
 
@@ -52,11 +52,11 @@ echo "╚═══════════════════════�
 echo ""
 echo "Next steps:"
 echo ""
-echo "1. Start DevMind Chat:"
-echo "   devmind chat"
+echo "1. Start Yaver Chat:"
+echo "   yaver chat"
 echo ""
 echo "2. Analyze a repository:"
-echo "   devmind analyze ."
+echo "   yaver analyze ."
 echo ""
 echo "3. Optional: Start Ollama for local LLM"
 echo "   ollama serve"

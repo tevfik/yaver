@@ -1,6 +1,6 @@
 """
 Unified Git Repository Analyzer Tool
-Adapted from IntelligentAgent project for DevMindAI.
+Adapted from IntelligentAgent project for YaverAI.
 """
 
 import os
@@ -17,7 +17,7 @@ try:
 except ImportError:
     # Fallback for development
     try:
-        from devmind_cli.config import Neo4jConfig
+        from yaver_cli.config import Neo4jConfig
     except ImportError:
         Neo4jConfig = None
 

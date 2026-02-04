@@ -25,13 +25,13 @@ class AnalysisSession:
         
         Args:
             session_id: The unique session identifier
-            base_dir: Optional override for storage directory (default: ~/.devmind/sessions)
+            base_dir: Optional override for storage directory (default: ~/.yaver/sessions)
         """
         self.session_id = session_id
         if base_dir:
             self.state_dir = base_dir / session_id
         else:
-            self.state_dir = Path.home() / ".devmind" / "sessions" / session_id
+            self.state_dir = Path.home() / ".yaver" / "sessions" / session_id
             
         self.plan_file = self.state_dir / "task_plan.md"
         self.findings_file = self.state_dir / "findings.md"

@@ -22,10 +22,10 @@ class ProjectHistoryManager:
         Initialize history manager.
         
         Args:
-            db_path: Path to SQLite database. Defaults to ~/.devmind/analysis_history.db
+            db_path: Path to SQLite database. Defaults to ~/.yaver/analysis_history.db
         """
         if db_path is None:
-            db_path = Path.home() / ".devmind" / "analysis_history.db"
+            db_path = Path.home() / ".yaver" / "analysis_history.db"
         
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)

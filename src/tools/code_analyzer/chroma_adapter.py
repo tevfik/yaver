@@ -31,7 +31,7 @@ class ChromaAdapter:
         """
         self.config = config or VectorDBConfig()
         self.persist_directory = self.config.chroma_persist_dir
-        self.collection_name = "devmind_code"
+        self.collection_name = "yaver_code"
         self.client = None
         self.collection = None
         self._connect()

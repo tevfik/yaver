@@ -6,11 +6,11 @@ from rich.prompt import Confirm
 from rich.markdown import Markdown
 from pathlib import Path
 
-from devmind_cli.agent_coder import CoderAgent
-from devmind_cli.agent_planner import PlannerAgent
-from devmind_cli.agent_reviewer import ReviewerAgent
-from devmind_cli.git_ops import GitOps
-from devmind_cli.cli_edit import extract_code_block
+from yaver_cli.agent_coder import CoderAgent
+from yaver_cli.agent_planner import PlannerAgent
+from yaver_cli.agent_reviewer import ReviewerAgent
+from yaver_cli.git_ops import GitOps
+from yaver_cli.cli_edit import extract_code_block
 
 console = Console()
 
@@ -31,7 +31,7 @@ def handle_solve(args):
         console.print("[bold red]Error:[/bold red] Not a git repository.")
         return
 
-    console.print(Panel(f"[bold blue]Task:[/bold blue] {task}\n[bold blue]Target File:[/bold blue] {file_path}", title="DevMind Autonomous Agent"))
+    console.print(Panel(f"[bold blue]Task:[/bold blue] {task}\n[bold blue]Target File:[/bold blue] {file_path}", title="Yaver Autonomous Agent"))
 
     # 2. Create Branch
     with console.status(f"[bold green]Creating branch for task..."):
@@ -186,7 +186,7 @@ def handle_solve(args):
                     pr_url = git_ops.create_pull_request(
                         branch_name=branch_name,
                         title=f"Fix: {task}",
-                        body=f"Automated PR by DevMind AI.\n\nTask: {task}\nFile: {file_path}\n\n## Final Plan\n{final_plan}"
+                        body=f"Automated PR by Yaver AI.\n\nTask: {task}\nFile: {file_path}\n\n## Final Plan\n{final_plan}"
                     )
                 
                 if pr_url:

@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from typing import Optional, List, Dict
 import time
+import json
 
 from rich.console import Console
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class ChatAgent:
     """
-    Intelligent Agent for DevMind Chat.
+    Intelligent Agent for Yaver Chat.
     Combines general LLM capabilities with RAG-based code knowledge.
     """
     
@@ -72,6 +73,51 @@ class ChatAgent:
             self.console.print(f"[red]Error initializing agent resources: {e}[/red]")
             self.console.print(f"[dim]{traceback.format_exc()}[/dim]")
 
+    def _load_quality_context(self) -> str:
+        """Load recent code quality findings to enrich chat context"""
+        if not self.project_id:
+            return ""
+            
+        try:
+            # Reconstruct path matching CodeQualityAgent's logic
+            # Check sessions first, then projects
+            project_dir = Path.home() / ".yaver" / "sessions" / self.project_id
+            if not project_dir.exists():
+                project_dir = Path.home() / ".yaver" / "projects" / self.project_id
+            
+            agent_dir = project_dir / "agent"
+            analyses_dir = agent_dir / "analyses"
+            if not analyses_dir.exists():
+                return ""
+            
+            reports = sorted(list(analyses_dir.glob("*_analysis.json")))
+            if not reports:
+                return ""
+                
+            latest_report_file = reports[-1]
+            self.console.print(f"[dim]Stats: Loading analysis context from {latest_report_file.name}[/dim]")
+            
+            with open(latest_report_file) as f:
+                report = json.load(f)
+                
+            summary = []
+            health = report.get("repository_health", {})
+            score = health.get("quality_score", 0)
+            summary.append(f"Repository Quality Score: {score}/100")
+            
+            issues = report.get("recommendations", [])
+            if issues:
+                summary.append(f"Identified {len(issues)} code quality issues:")
+                for issue in issues[:5]:
+                    summary.append(f"- [{issue.get('priority', '?')}/10] {issue.get('title', 'Unknown Issue')}")
+            else:
+                summary.append("No critical code quality issues detected.")
+                
+            return "\n".join(summary)
+        except Exception as e:
+            logger.warning(f"Failed to load quality context: {e}")
+            return ""
+
     def chat(self, user_input: str) -> str:
         """
         Process a user message and return the response.
@@ -79,23 +125,19 @@ class ChatAgent:
         """
         self.history.append(HumanMessage(content=user_input))
         
-        # Heuristic: If we have RAG service, let's use it for code queries
-        # The RAG service already does intent classification.
-        # But for "Hi", "Hello" etc, we might want to skip RAG overhead?
-        # RAG service intent classifier should handle "Chat" intent too theoretically, 
-        # but let's stick to our RAGService logic which returns "I couldn't find..." if not relevant,
-        # or performs hybrid retrieval.
-        
         response_text = ""
         
         if self.rag_service:
-            # Enriched query using RAG with optional project filtering
             try:
-                # Pass history so RAG can perform query rewriting (coreference resolution)
+                # Load quality context
+                quality_ctx = self._load_quality_context()
+                
+                # Pass history so RAG can perform query rewriting
                 response_text = self.rag_service.answer(
                     user_input, 
                     session_id=self.project_id,
-                    chat_history=self.history[:-1] # Exclude current message which was just appended
+                    chat_history=self.history[:-1], # Exclude current message
+                    extra_context=quality_ctx
                 )
             except Exception as e:
                 self.console.print(f"[yellow]RAG Error: {e}[/yellow]")

@@ -18,7 +18,7 @@ class AnalysisHistory:
     Uses SQLite to track commits and analysis state.
     """
 
-    DB_PATH = Path.home() / ".devmind" / "analysis_history.db"
+    DB_PATH = Path.home() / ".yaver" / "analysis_history.db"
 
     def __init__(self):
         """Initialize or connect to SQLite database."""

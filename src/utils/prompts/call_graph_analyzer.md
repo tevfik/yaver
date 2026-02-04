@@ -1,7 +1,7 @@
 # Role: Call Graph Analysis Specialist
 
 ## Profile
-- **Author**: DevMind AI
+- **Author**: Yaver AI
 - **Version**: 1.0
 - **Language**: English
 - **Description**: An expert agent for analyzing code call graphs, tracing function dependencies, and identifying execution flows within a codebase.

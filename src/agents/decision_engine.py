@@ -35,7 +35,7 @@ class DecisionEngine:
         Initialize decision engine
         
         Args:
-            agent_base: DevMind agent with LLM access
+            agent_base: Yaver agent with LLM access
         """
         self.agent = agent_base
     

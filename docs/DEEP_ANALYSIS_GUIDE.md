@@ -1,23 +1,23 @@
 # Deep Code Analysis Guide
 
-DevMind Deep Analysis is a powerful engine that indexes your codebase into a Graph Database (Neo4j) and a Vector Database (Qdrant) to enable semantic understanding, impact analysis, and visual exploration.
+Yaver Deep Analysis is a powerful engine that indexes your codebase into a Graph Database (Neo4j) and a Vector Database (Qdrant) to enable semantic understanding, impact analysis, and visual exploration.
 
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
-Ensure you have the required databases running. If you used `devmind setup`, this should be handled (Docker).
+Ensure you have the required databases running. If you used `yaver setup`, this should be handled (Docker).
 
 ```bash
 docker ps
-# Should show: devmind-neo4j, devmind-qdrant
+# Should show: yaver-neo4j, yaver-qdrant
 ```
 
 ### 2. Learn a Repository
-To enable deep features, you must first "teach" DevMind your code.
+To enable deep features, you must first "teach" Yaver your code.
 
 ```bash
 # Deep Learning (AST + Graph + Embeddings)
-devmind analyze . --type deep --project-id my-project
+yaver analyze . --type deep --project-id my-project
 ```
 
 *Note: The first run takes time (generating embeddings). Subsequent runs use caching.*
@@ -29,13 +29,13 @@ Generate diagrams to understand the code structure.
 
 **Class Diagram:**
 ```bash
-devmind visualize . --type class --output classes.md
+yaver visualize . --type class --output classes.md
 ```
 
 **Call Graph:**
 Trace who calls a specific function.
 ```bash
-devmind visualize . --type call-graph -f "my_function_name" -o flow.md
+yaver visualize . --type call-graph -f "my_function_name" -o flow.md
 ```
 *Output is MermaidJS format, viewable in GitHub or compatible editors.*
 
@@ -43,7 +43,7 @@ devmind visualize . --type call-graph -f "my_function_name" -o flow.md
 Predict what breaks if you change a function.
 
 ```bash
-devmind simulate "Change signature of process_data"
+yaver simulate "Change signature of process_data"
 ```
 *Generates a risk report (findings.md) detailing affected files and call chains.*
 
@@ -51,7 +51,7 @@ devmind simulate "Change signature of process_data"
 Ask questions about your codebase in natural language.
 
 ```bash
-devmind chat
+yaver chat
 ```
 
 **Example Queries:**
@@ -81,4 +81,4 @@ python src/utils/reset_graph_db.py
 ```
 
 **Logs:**
-Check `~/.devmind/logs/devmind.log` for analysis errors.
+Check `~/.yaver/logs/yaver.log` for analysis errors.

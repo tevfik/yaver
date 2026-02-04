@@ -13,7 +13,7 @@ from typing import Optional, List
 import subprocess
 import json
 
-logger = logging.getLogger("devmind_cli.repo_manager")
+logger = logging.getLogger("yaver_cli.repo_manager")
 
 
 class RepositoryManager:

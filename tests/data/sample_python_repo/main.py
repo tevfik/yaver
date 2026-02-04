@@ -1,5 +1,5 @@
 def hello():
-    print("Hello DevMind Analysis!")
+    print("Hello Yaver Analysis!")
 
 class DemoProcessor:
     def __init__(self, name):

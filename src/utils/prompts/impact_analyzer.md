@@ -1,7 +1,7 @@
 # Role: Impact Analysis Expert
 
 ## Profile
-- **Author**: DevMind AI
+- **Author**: Yaver AI
 - **Version**: 1.0
 - **Language**: English
 - **Description**: A specialized agent for predicting the impact of code changes, identifying affected components, and recommending safe modification strategies.

@@ -95,15 +95,15 @@ class MetricsAnalyzer:
             result = session.run("""
                 MATCH (f:Function)-[:DEFINED_IN]->(file:File {repo_id: $repo_id})
                 WITH f, file,
-                     length([(f)-[:CALLS]->()]) as call_count,
-                     length([(f)-[:CALLS*1..2]->()]) as max_depth
+                     size([(f)-[:CALLS]->() | 1]) as call_count,
+                     size([(f)-[:CALLS*1..2]->() | 1]) as max_depth
                 RETURN f.id as function_id,
                        f.name as function_name,
                        file.path as file_path,
                        (1 + call_count) as complexity_score,
-                       f.loc as loc,
-                       f.parameters as parameters,
-                       f.has_docstring as has_docstring
+                       (f.end_line - f.start_line) as loc,
+                       size(f.args) as parameters,
+                       coalesce(f.has_docstring, false) as has_docstring
                 ORDER BY complexity_score DESC
             """, {"repo_id": repo_id})
             
@@ -130,13 +130,13 @@ class MetricsAnalyzer:
             result = session.run("""
                 MATCH (f:Function)-[:DEFINED_IN]->(file:File {repo_id: $repo_id})
                 WHERE NOT (f)<-[:CALLS]-()
-                  AND f.name NOT IN ['__init__', '__main__', 'main']
+                  AND NOT f.name IN ['__init__', '__main__', 'main']
                 WITH f, file, 0 as incoming_calls
                 WHERE incoming_calls = 0
                 RETURN f.id as function_id,
                        f.name as function_name,
                        file.path as file_path,
-                       f.line_number as line_number
+                       f.start_line as line_number
             """, {"repo_id": repo_id})
             
             for record in result:

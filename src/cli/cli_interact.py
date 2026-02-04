@@ -1,5 +1,5 @@
 """
-Interactive capabilities for DevMind CLI
+Interactive capabilities for Yaver CLI
 Handles chat loops, command suggestions, and smart context parsing.
 """
 import os
@@ -16,8 +16,8 @@ from rich.prompt import Prompt, Confirm
 from rich.panel import Panel
 from rich.syntax import Syntax
 
-from devmind_cli.agent_base import create_llm, print_section_header
-from devmind_cli.config import get_config
+from yaver_cli.agent_base import create_llm, print_section_header
+from yaver_cli.config import get_config
 
 console = Console()
 
@@ -130,17 +130,17 @@ def handle_chat_mode():
     """
     Starts an interactive REPL chat session with context awareness.
     """
-    print_section_header("DevMind AI Chat", "💬")
+    print_section_header("Yaver AI Chat", "💬")
     console.print("[dim]Type 'exit' or 'quit' to leave. Use @filename to include context.[/dim]\n")
     
     llm = create_llm()
     history = [
-        SystemMessage(content="You are DevMind AI, an expert software architecture and coding assistant. You are running in a CLI environment.")
+        SystemMessage(content="You are Yaver AI, an expert software architecture and coding assistant. You are running in a CLI environment.")
     ]
     
     while True:
         try:
-            user_input = Prompt.ask("\n[bold cyan]DevMind>[/bold cyan]")
+            user_input = Prompt.ask("\n[bold cyan]Yaver>[/bold cyan]")
             if user_input.strip().lower() in ['exit', 'quit']:
                 break
                 

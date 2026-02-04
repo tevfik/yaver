@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Test script for incremental analysis workflow.
-Creates a test repository, makes git commits, and tests the full devmind workflow.
+Creates a test repository, makes git commits, and tests the full yaver workflow.
 """
 
 import os
@@ -213,21 +213,21 @@ def show_git_log(repo_path):
     print(f"\n{BOLD}{BLUE}📋 Git commit history:{END}")
     run_cmd("git log --oneline", cwd=repo_path)
 
-def test_devmind_workflow(repo_path, project_id):
-    """Test the devmind learn workflow"""
-    print(f"\n{BOLD}{GREEN}🚀 Testing DevMind Workflow{END}")
+def test_yaver_workflow(repo_path, project_id):
+    """Test the yaver learn workflow"""
+    print(f"\n{BOLD}{GREEN}🚀 Testing Yaver Workflow{END}")
     
     # Test 1: Full analysis (first run)
     print(f"\n{BOLD}{BLUE}Test 1: Full Analysis (First Run){END}")
     print(f"{YELLOW}This will analyze all files since it's the first run{END}")
     run_cmd(
-        f"devmind learn {repo_path} --project-id {project_id}",
+        f"yaver learn {repo_path} --project-id {project_id}",
         description="Run full analysis on test repository"
     )
     
     # Check history
     print(f"\n{BOLD}{BLUE}Checking history after first analysis:{END}")
-    run_cmd(f"devmind project history {project_id}", description="Show project history")
+    run_cmd(f"yaver project history {project_id}", description="Show project history")
     
     time.sleep(2)
     
@@ -235,13 +235,13 @@ def test_devmind_workflow(repo_path, project_id):
     print(f"\n{BOLD}{BLUE}Test 2: Incremental Analysis (No Changes){END}")
     print(f"{YELLOW}Same commit hash → should SKIP analysis{END}")
     run_cmd(
-        f"devmind learn {repo_path} --project-id {project_id} --incremental",
+        f"yaver learn {repo_path} --project-id {project_id} --incremental",
         description="Run incremental analysis (should skip)"
     )
     
     # Check history again
     print(f"\n{BOLD}{BLUE}History after incremental attempt (no changes):{END}")
-    run_cmd(f"devmind project history {project_id} --limit 5", description="Show updated history")
+    run_cmd(f"yaver project history {project_id} --limit 5", description="Show updated history")
 
 def test_after_modification(repo_path, project_id, mod_name):
     """Test analysis after making modifications"""
@@ -249,7 +249,7 @@ def test_after_modification(repo_path, project_id, mod_name):
     print(f"{YELLOW}New commit hash detected → will analyze changed files{END}")
     
     run_cmd(
-        f"devmind learn {repo_path} --project-id {project_id} --incremental",
+        f"yaver learn {repo_path} --project-id {project_id} --incremental",
         description="Run incremental analysis after changes"
     )
     
@@ -257,7 +257,7 @@ def test_after_modification(repo_path, project_id, mod_name):
     
     # Show updated history
     print(f"\n{BOLD}{BLUE}Updated history:{END}")
-    run_cmd(f"devmind project history {project_id} --limit 10", description="Show history")
+    run_cmd(f"yaver project history {project_id} --limit 10", description="Show history")
 
 def cleanup_test(project_id):
     """Test cleanup command"""
@@ -265,18 +265,18 @@ def cleanup_test(project_id):
     print(f"{YELLOW}Keeping only last 2 analyses, removing older ones{END}")
     
     run_cmd(
-        f"devmind project cleanup {project_id} --keep-last 2 --force",
+        f"yaver project cleanup {project_id} --keep-last 2 --force",
         description="Cleanup old analyses (keep last 2)"
     )
     
     # Show final history
     print(f"\n{BOLD}{BLUE}Final history after cleanup:{END}")
-    run_cmd(f"devmind project history {project_id}", description="Show final history")
+    run_cmd(f"yaver project history {project_id}", description="Show final history")
 
 def main():
     """Main test workflow"""
     print(f"\n{BOLD}{GREEN}{'='*70}")
-    print(f"  DEVMIND INCREMENTAL ANALYSIS - WORKFLOW TEST")
+    print(f"  YAVER INCREMENTAL ANALYSIS - WORKFLOW TEST")
     print(f"{'='*70}{END}\n")
     
     # Create temporary test repository
@@ -291,8 +291,8 @@ def main():
             show_git_log(str(repo_path))
             
             # Phase 2: Initial analysis
-            print(f"\n{BOLD}{GREEN}PHASE 2: Initial DevMind Analysis{END}")
-            test_devmind_workflow(str(repo_path), project_id)
+            print(f"\n{BOLD}{GREEN}PHASE 2: Initial Yaver Analysis{END}")
+            test_yaver_workflow(str(repo_path), project_id)
             
             # Phase 3: First modification
             print(f"\n{BOLD}{GREEN}PHASE 3: First Modification (utils.py){END}")

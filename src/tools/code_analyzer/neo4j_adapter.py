@@ -280,6 +280,7 @@ class Neo4jAdapter:
                 fn.end_line = $end,
                 fn.complexity = $complexity,
                 fn.args = $args,
+                fn.has_docstring = $has_docstring,
                 fn.session_id = $session_id
             
             WITH fn
@@ -292,6 +293,7 @@ class Neo4jAdapter:
             "end": func.end_line,
             "complexity": func.complexity,
             "args": func.args,
+            "has_docstring": bool(func.docstring),
             "parent_id": parent_id,
             "session_id": session_id
         })

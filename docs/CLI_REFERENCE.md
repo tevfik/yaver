@@ -1,28 +1,28 @@
-# DevMind CLI Command Guide
+# Yaver CLI Command Guide
 
-Complete reference for all DevMind commands and their usage.
+Complete reference for all Yaver commands and their usage.
 
 ## ⚡ Quick Reference (Cheat Sheet)
 
 ### Session vs Project
 | Concept | Purpose | Command |
 |---------|---------|---------|
-| **Session** | Chat conversation history | `devmind session ...` |
-| **Project** | Group of learned repositories | `devmind project ...` |
+| **Session** | Chat conversation history | `yaver session ...` |
+| **Project** | Group of learned repositories | `yaver project ...` |
 
 ### Top Commands
 ```bash
 # Chat with project context
-devmind chat --project-id=my-app
+yaver chat --project-id=my-app
 
 # Create chat session
-devmind session new --name="Feature X"
+yaver session new --name="Feature X"
 
 # Learn repo into project (Deep Analysis)
-devmind analyze ./backend --type deep --project-id=my-app
+yaver analyze ./backend --type deep --project-id=my-app
 
 # Get autonomous code recommendations
-devmind agent analyze my-app
+yaver agent analyze my-app
 ```
 
 ## Table of Contents
@@ -45,28 +45,28 @@ devmind agent analyze my-app
 
 ```bash
 # Learn a repository (Deep Analysis)
-devmind analyze /path/to/repo --type deep
+yaver analyze /path/to/repo --type deep
 
 # Get autonomous recommendations
-devmind agent analyze myproject
+yaver agent analyze myproject
 
 # Start interactive chat
-devmind chat
+yaver chat
 
 # Get repository status
-devmind status
+yaver status
 ```
 
 ---
 
 ## Core Commands
 
-### `devmind chat`
+### `yaver chat`
 Interactive AI chat for querying your codebase.
 
 **Usage:**
 ```bash
-devmind chat [OPTIONS]
+yaver chat [OPTIONS]
 ```
 
 **Options:**
@@ -82,35 +82,35 @@ devmind chat [OPTIONS]
 
 **Example 1: Chat with all learned repositories**
 ```bash
-$ devmind chat
-🤖 DevMind AI Chat (Type 'exit' to quit)
+$ yaver chat
+🤖 Yaver AI Chat (Type 'exit' to quit)
 💡 Tip: Ask anything about your code, get AI assistance
 
 You: How does authentication work?
-DevMind: Based on the codebase, authentication uses JWT tokens...
+Yaver: Based on the codebase, authentication uses JWT tokens...
 
 You: Find code that validates emails
-DevMind: Here are the relevant code snippets...
+Yaver: Here are the relevant code snippets...
 ```
 
 **Example 2: Chat within a specific project**
 ```bash
 # Limit chat to 'my-saas-app' project only
-$ devmind chat --project-id=my-saas-app
-🤖 DevMind AI Chat - Project: my-saas-app
+$ yaver chat --project-id=my-saas-app
+🤖 Yaver AI Chat - Project: my-saas-app
 
 You: How does the payment flow work?
-DevMind: [Searches only in backend, frontend, and auth repos from my-saas-app]
+Yaver: [Searches only in backend, frontend, and auth repos from my-saas-app]
 ```
 
 **Example 3: Use both project and chat session**
 ```bash
 # Continue a previous conversation about a specific project
-$ devmind chat --project-id=my-saas-app --session-id=payment-review
-🤖 DevMind AI Chat - Project: my-saas-app, Session: payment-review
+$ yaver chat --project-id=my-saas-app --session-id=payment-review
+🤖 Yaver AI Chat - Project: my-saas-app, Session: payment-review
 
 You: Continue from where we left off
-DevMind: [Uses project context + previous conversation history]
+Yaver: [Uses project context + previous conversation history]
 ```
 
 **Tips:**
@@ -124,12 +124,12 @@ DevMind: [Uses project context + previous conversation history]
 
 ## Learning & Analysis
 
-### `devmind analyze`
+### `yaver analyze`
 Unified command for repository analysis, from basic overview to deep learning.
 
 **Usage:**
 ```bash
-devmind analyze [PATH] [OPTIONS]
+yaver analyze [PATH] [OPTIONS]
 ```
 
 **Arguments:**
@@ -148,7 +148,7 @@ devmind analyze [PATH] [OPTIONS]
 
 **1. Basic Overview:**
 ```bash
-$ devmind analyze .
+$ yaver analyze .
 📊 Analyzing repository: .
    Status: 🔴 Dirty
    Commits: 50+
@@ -156,49 +156,49 @@ $ devmind analyze .
 ```
 
 **2. Deep Learning (Understand Codebase):**
-> **Note:** This replaces the old `devmind learn` command.
+> **Note:** This replaces the old `yaver learn` command.
 ```bash
 # Deep learn repo and store in database
-devmind analyze . --type deep --project-id my-project
+yaver analyze . --type deep --project-id my-project
 ```
 
 **Mult-Repo Setup:**
 ```bash
 # Learn multiple repos into one project context
-devmind analyze ./backend --type deep --project-id my-saas
-devmind analyze ./frontend --type deep --project-id my-saas
+yaver analyze ./backend --type deep --project-id my-saas
+yaver analyze ./frontend --type deep --project-id my-saas
 ```
 
 **INCREMENTAL ANALYSIS:**
 ```bash
 # Only re-analyze changed files (much faster)
-devmind analyze . --type deep --incremental
+yaver analyze . --type deep --incremental
 ```
 
 ---
 
-### `devmind learn` (DEPRECATED)
-⚠️ **Deprecated:** Please use `devmind analyze --type deep` instead.
+### `yaver learn` (DEPRECATED)
+⚠️ **Deprecated:** Please use `yaver analyze --type deep` instead.
 This command still works but redirects to the new analyze command.
 
 ---
 
 ## Autonomous Agent
 
-### `devmind agent`
+### `yaver agent`
 Your persistent autonomous AI developer assistant. The agent observes your code, analyzes quality, makes reasoned decisions, and learns from your feedback.
 
 **Usage:**
 ```bash
-devmind agent [SUBCOMMAND] [OPTIONS]
+yaver agent [SUBCOMMAND] [OPTIONS]
 ```
 
-### `devmind agent analyze`
+### `yaver agent analyze`
 Run autonomous analysis on a project to generate smart recommendations.
 
 **Usage:**
 ```bash
-devmind agent analyze <PROJECT_ID> [--format table|json|chat]
+yaver agent analyze <PROJECT_ID> [--format table|json|chat]
 ```
 
 **Features:**
@@ -210,7 +210,7 @@ devmind agent analyze <PROJECT_ID> [--format table|json|chat]
 
 **Example:**
 ```bash
-$ devmind agent analyze my-saas
+$ yaver agent analyze my-saas
 🤖 AUTONOMOUS AGENT ANALYSIS
 
 ⚠️  Issues Found:
@@ -223,12 +223,12 @@ $ devmind agent analyze my-saas
 
 ---
 
-### `devmind agent status`
+### `yaver agent status`
 View the agent's learning state and preferences for a project.
 
 **Usage:**
 ```bash
-devmind agent status <PROJECT_ID>
+yaver agent status <PROJECT_ID>
 ```
 
 **Output:**
@@ -238,12 +238,12 @@ devmind agent status <PROJECT_ID>
 
 ---
 
-### `devmind agent history`
+### `yaver agent history`
 View decision history and code quality trends over time.
 
 **Usage:**
 ```bash
-devmind agent history <PROJECT_ID> [--limit N]
+yaver agent history <PROJECT_ID> [--limit N]
 ```
 
 **Output:**
@@ -253,12 +253,12 @@ devmind agent history <PROJECT_ID> [--limit N]
 
 ---
 
-### `devmind agent feedback`
+### `yaver agent feedback`
 Teach the agent by providing feedback on its recommendations. The agent uses this to improve future suggestions.
 
 **Usage:**
 ```bash
-devmind agent feedback <PROJECT_ID> <REC_ID> --status <STATUS> [--note "TEXT"]
+yaver agent feedback <PROJECT_ID> <REC_ID> --status <STATUS> [--note "TEXT"]
 ```
 
 **Options:**
@@ -267,22 +267,22 @@ devmind agent feedback <PROJECT_ID> <REC_ID> --status <STATUS> [--note "TEXT"]
 
 **Example:**
 ```bash
-devmind agent feedback my-saas 1 --status approve --note "Good catch, removing this now"
+yaver agent feedback my-saas 1 --status approve --note "Good catch, removing this now"
 ```
 
 ---
 
-### `devmind simulate`
+### `yaver simulate`
 Simulate impact analysis for code changes.
 
 **Usage:**
 ```bash
-devmind simulate <FILE> <FUNCTION>
+yaver simulate <FILE> <FUNCTION>
 ```
 
 **Example:**
 ```bash
-devmind simulate src/auth.py login
+yaver simulate src/auth.py login
 
 # Output shows:
 # - What depends on this function
@@ -296,29 +296,29 @@ devmind simulate src/auth.py login
 
 ### Understanding Sessions vs Projects
 
-DevMind has **two distinct session types**:
+Yaver has **two distinct session types**:
 
-1. **Chat Sessions** (via `devmind session`)
+1. **Chat Sessions** (via `yaver session`)
    - Stores **conversation history** for chat interactions
    - Tagged for organization and filtering
    - Supports switching between different conversation contexts
    - Example: "debugging-session", "feature-planning", "code-review"
 
-2. **Projects** (via `devmind project`)
+2. **Projects** (via `yaver project`)
    - Groups multiple **learned repositories** together
-   - Created with `devmind learn --project-id=PROJECT_NAME`
+   - Created with `yaver learn --project-id=PROJECT_NAME`
    - Used to organize multi-repo systems (microservices, monorepos)
    - Stores code graph, AST analysis, and embeddings
    - Example: "my-saas-app", "ml-pipeline", "legacy-system"
 
 ### Chat Session Commands
 
-#### `devmind session new`
+#### `yaver session new`
 Create a new chat session to organize conversations.
 
 **Usage:**
 ```bash
-devmind session new [--name NAME] [--tag TAG ...]
+yaver session new [--name NAME] [--tag TAG ...]
 ```
 
 **Options:**
@@ -327,49 +327,49 @@ devmind session new [--name NAME] [--tag TAG ...]
 
 **Example:**
 ```bash
-devmind session new --name="Feature Discussion" --tag=feature --tag=frontend
+yaver session new --name="Feature Discussion" --tag=feature --tag=frontend
 ```
 
 ---
 
-#### `devmind session list`
+#### `yaver session list`
 List all chat sessions with their tags.
 
 **Usage:**
 ```bash
-devmind session list
+yaver session list
 ```
 
 ---
 
-#### `devmind session set`
+#### `yaver session set`
 Switch to a different chat session.
 
 **Usage:**
 ```bash
-devmind session set <SESSION_ID>
+yaver session set <SESSION_ID>
 ```
 
 ---
 
-#### `devmind session delete`
+#### `yaver session delete`
 Delete a chat session and its history.
 
 **Usage:**
 ```bash
-devmind session delete <SESSION_ID> [--force]
+yaver session delete <SESSION_ID> [--force]
 ```
 
 ---
 
 ### Project Commands (Learning Sessions)
 
-#### `devmind project list`
+#### `yaver project list`
 List all learned projects with their repositories.
 
 **Usage:**
 ```bash
-devmind project list
+yaver project list
 ```
 
 **Output:**
@@ -386,22 +386,22 @@ devmind project list
 │ legacy-system  │ monolith               │ 2026-02-01 09:15 │
 └────────────────┴────────────────────────┴──────────────────┘
 
-💡 Use 'devmind project show <project-id>' for details
+💡 Use 'yaver project show <project-id>' for details
 ```
 
 ---
 
-#### `devmind project show`
+#### `yaver project show`
 Show detailed information about a specific project.
 
 **Usage:**
 ```bash
-devmind project show <PROJECT_ID>
+yaver project show <PROJECT_ID>
 ```
 
 **Example:**
 ```bash
-devmind project show my-saas-app
+yaver project show my-saas-app
 ```
 
 **Output:**
@@ -430,12 +430,12 @@ Per-Repository Breakdown:
 
 ---
 
-#### `devmind project delete`
+#### `yaver project delete`
 Delete a project and all its learned data from Neo4j.
 
 **Usage:**
 ```bash
-devmind project delete <PROJECT_ID> [--force]
+yaver project delete <PROJECT_ID> [--force]
 ```
 
 **Options:**
@@ -444,10 +444,10 @@ devmind project delete <PROJECT_ID> [--force]
 **Example:**
 ```bash
 # With confirmation
-devmind project delete old-project
+yaver project delete old-project
 
 # Skip confirmation
-devmind project delete old-project --force
+yaver project delete old-project --force
 ```
 
 **Output:**
@@ -465,27 +465,27 @@ devmind project delete old-project --force
 
 ## Code Assistance
 
-### `devmind fix`
+### `yaver fix`
 Automatically fix code issues.
 
 **Usage:**
 ```bash
-devmind fix [FILE]
+yaver fix [FILE]
 ```
 
 **Example:**
 ```bash
-devmind fix src/buggy_code.py
+yaver fix src/buggy_code.py
 ```
 
 ---
 
-### `devmind explain`
+### `yaver explain`
 Get detailed explanation of code.
 
 **Usage:**
 ```bash
-devmind explain <FILE> [OPTIONS]
+yaver explain <FILE> [OPTIONS]
 ```
 
 **Options:**
@@ -494,17 +494,17 @@ devmind explain <FILE> [OPTIONS]
 
 **Example:**
 ```bash
-devmind explain src/auth.py --function=verify_token
+yaver explain src/auth.py --function=verify_token
 ```
 
 ---
 
-### `devmind commit`
+### `yaver commit`
 Generate commit messages from staged changes.
 
 **Usage:**
 ```bash
-devmind commit [OPTIONS]
+yaver commit [OPTIONS]
 ```
 
 **Options:**
@@ -516,10 +516,10 @@ devmind commit [OPTIONS]
 git add .
 
 # Generate commit message
-devmind commit
+yaver commit
 
 # With context
-devmind commit --context "Fixed authentication bug from issue #123"
+yaver commit --context "Fixed authentication bug from issue #123"
 ```
 
 **Output:**
@@ -537,17 +537,17 @@ Use this message? [Y/n]:
 
 ---
 
-### `devmind suggest`
+### `yaver suggest`
 Get code improvement suggestions.
 
 **Usage:**
 ```bash
-devmind suggest <FILE>
+yaver suggest <FILE>
 ```
 
 **Example:**
 ```bash
-devmind suggest src/utils/helpers.py
+yaver suggest src/utils/helpers.py
 ```
 
 **Output:**
@@ -562,99 +562,99 @@ devmind suggest src/utils/helpers.py
 
 ---
 
-### `devmind edit`
+### `yaver edit`
 AI-assisted code editing.
 
 **Usage:**
 ```bash
-devmind edit <FILE> --instruction "<INSTRUCTION>"
+yaver edit <FILE> --instruction "<INSTRUCTION>"
 ```
 
 **Example:**
 ```bash
-devmind edit src/api.py --instruction "Add rate limiting to all endpoints"
+yaver edit src/api.py --instruction "Add rate limiting to all endpoints"
 ```
 
 ---
 
-### `devmind solve`
+### `yaver solve`
 Solve coding problems and challenges.
 
 **Usage:**
 ```bash
-devmind solve "<PROBLEM_DESCRIPTION>"
+yaver solve "<PROBLEM_DESCRIPTION>"
 ```
 
 **Example:**
 ```bash
-devmind solve "Write a function to validate credit card numbers using Luhn algorithm"
+yaver solve "Write a function to validate credit card numbers using Luhn algorithm"
 ```
 
 ---
 
 ## Memory Operations
 
-DevMind maintains a unified memory system for context and learning.
+Yaver maintains a unified memory system for context and learning.
 
-### `devmind remember`
-Store information in DevMind's memory.
+### `yaver remember`
+Store information in Yaver's memory.
 
 **Usage:**
 ```bash
-devmind remember "<INFORMATION>"
+yaver remember "<INFORMATION>"
 ```
 
 **Example:**
 ```bash
-devmind remember "The auth service uses Redis for session storage"
+yaver remember "The auth service uses Redis for session storage"
 ```
 
 ---
 
-### `devmind recall`
+### `yaver recall`
 Retrieve information from memory.
 
 **Usage:**
 ```bash
-devmind recall "<QUERY>"
+yaver recall "<QUERY>"
 ```
 
 **Example:**
 ```bash
-devmind recall "How is session storage implemented?"
+yaver recall "How is session storage implemented?"
 ```
 
 ---
 
-### `devmind reset-memory`
-Clear DevMind's memory (use with caution).
+### `yaver reset-memory`
+Clear Yaver's memory (use with caution).
 
 **Usage:**
 ```bash
-devmind reset-memory [--confirm]
+yaver reset-memory [--confirm]
 ```
 
 **Example:**
 ```bash
-devmind reset-memory --confirm
+yaver reset-memory --confirm
 ```
 
 ---
 
 ## System & Status
 
-### `devmind status`
+### `yaver status`
 Show system status and configuration.
 
 **Usage:**
 ```bash
-devmind status
+yaver status
 ```
 
 **Output:**
 ```
 ============================================================
-DevMind System Status
+Yaver System Status
 ============================================================
 
 🔧 Configuration:
@@ -678,27 +678,27 @@ DevMind System Status
 
 ---
 
-### `devmind query`
+### `yaver query`
 Query the codebase database directly.
 
 **Usage:**
 ```bash
-devmind query <CYPHER_QUERY>
+yaver query <CYPHER_QUERY>
 ```
 
 **Example:**
 ```bash
-devmind query "MATCH (f:Function) WHERE f.complexity > 10 RETURN f.name, f.complexity"
+yaver query "MATCH (f:Function) WHERE f.complexity > 10 RETURN f.name, f.complexity"
 ```
 
 ---
 
-### `devmind inspect`
+### `yaver inspect`
 Inspect code structure and metrics.
 
 **Usage:**
 ```bash
-devmind inspect <FILE> [OPTIONS]
+yaver inspect <FILE> [OPTIONS]
 ```
 
 **Options:**
@@ -708,17 +708,17 @@ devmind inspect <FILE> [OPTIONS]
 
 **Example:**
 ```bash
-devmind inspect src/core/engine.py --metrics --call-graph
+yaver inspect src/core/engine.py --metrics --call-graph
 ```
 
 ---
 
-### `devmind insights`
+### `yaver insights`
 Get insights about the codebase.
 
 **Usage:**
 ```bash
-devmind insights [OPTIONS]
+yaver insights [OPTIONS]
 ```
 
 **Options:**
@@ -728,7 +728,7 @@ devmind insights [OPTIONS]
 
 **Example:**
 ```bash
-devmind insights --complexity
+yaver insights --complexity
 ```
 
 **Output:**
@@ -761,13 +761,13 @@ Learn multiple related repositories under a single project:
 
 ```bash
 # Microservices architecture
-devmind learn ~/services/api-gateway --project-id=microservices
-devmind learn ~/services/user-service --project-id=microservices
-devmind learn ~/services/payment-service --project-id=microservices
-devmind learn ~/services/notification-service --project-id=microservices
+yaver learn ~/services/api-gateway --project-id=microservices
+yaver learn ~/services/user-service --project-id=microservices
+yaver learn ~/services/payment-service --project-id=microservices
+yaver learn ~/services/notification-service --project-id=microservices
 
 # Now query across all services
-devmind chat --project-id=microservices
+yaver chat --project-id=microservices
 > "How does the payment flow work across services?"
 ```
 
@@ -780,22 +780,22 @@ devmind chat --project-id=microservices
 **Example Workflow:**
 ```bash
 # Learn your microservices
-devmind learn ~/work/backend --project-id=work-project
-devmind learn ~/work/frontend --project-id=work-project
+yaver learn ~/work/backend --project-id=work-project
+yaver learn ~/work/frontend --project-id=work-project
 
 # Learn your side project
-devmind learn ~/hobby/game-engine --project-id=hobby-project
+yaver learn ~/hobby/game-engine --project-id=hobby-project
 
 # Query work project only
-devmind chat --project-id=work-project
+yaver chat --project-id=work-project
 > "How is user authentication implemented?"
 
 # Query hobby project only  
-devmind chat --project-id=hobby-project
+yaver chat --project-id=hobby-project
 > "How does the physics engine work?"
 
 # List all sessions
-devmind session list
+yaver session list
 ```
 
 ### Incremental Learning
@@ -804,10 +804,10 @@ For large codebases, use incremental mode after initial learning:
 
 ```bash
 # Initial learning (full scan)
-devmind learn ~/large-project --project-id=main
+yaver learn ~/large-project --project-id=main
 
 # After code changes (only changed files)
-devmind learn ~/large-project --project-id=main --incremental
+yaver learn ~/large-project --project-id=main --incremental
 ```
 
 ### Session-Based Queries
@@ -816,27 +816,27 @@ Query specific sessions in chat mode:
 
 ```bash
 # Set active session
-devmind session set my-saas-app
+yaver session set my-saas-app
 
 # Chat will use this session's context
-devmind chat
+yaver chat
 ```
 
 ### Combining Commands
 
 ```bash
 # Analyze, fix, and commit in one workflow
-devmind analyze src/
-devmind fix src/issues.py
+yaver analyze src/
+yaver fix src/issues.py
 git add src/issues.py
-devmind commit --context "Fixed issues found in analysis"
+yaver commit --context "Fixed issues found in analysis"
 ```
 
 ---
 
 ## Environment Variables
 
-Configure DevMind using environment variables:
+Configure Yaver using environment variables:
 
 ```bash
 # Neo4j Configuration
@@ -857,9 +857,9 @@ export OLLAMA_MODEL="llama3.1:8b"
 
 ## Configuration Files
 
-DevMind looks for configuration in:
+Yaver looks for configuration in:
 - `.env` in current directory
-- `~/.devmind/config.yaml`
+- `~/.yaver/config.yaml`
 - Environment variables
 
 **Example `.env`:**
@@ -892,7 +892,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 ### Memory Management
 
 1. **Regular cleanup**: Delete old sessions with `session delete`
-2. **Check status**: Monitor database size with `devmind status`
+2. **Check status**: Monitor database size with `yaver status`
 3. **Incremental updates**: Don't re-learn entire repos unnecessarily
 
 ### Performance
@@ -910,11 +910,11 @@ OLLAMA_BASE_URL=http://localhost:11434
 #### Test 1: Learn and Create a Project
 ```bash
 # Learn a repository with a project ID
-devmind learn /path/to/repo --project-id=test-project
+yaver learn /path/to/repo --project-id=test-project
 
 # Or use current directory
 cd /path/to/repo
-devmind learn . --project-id=test-project
+yaver learn . --project-id=test-project
 ```
 
 **Expected Output:**
@@ -929,7 +929,7 @@ Project ID: test-project
 
 #### Test 2: List Projects
 ```bash
-devmind project list
+yaver project list
 ```
 
 **Expected Output:**
@@ -945,7 +945,7 @@ devmind project list
 
 #### Test 3: Show Project Details
 ```bash
-devmind project show test-project
+yaver project show test-project
 ```
 
 **Expected Output:**
@@ -970,7 +970,7 @@ Per-Repository Breakdown:
 
 #### Test 4: Create Chat Session
 ```bash
-devmind session new --name="Test Session" --tag=testing
+yaver session new --name="Test Session" --tag=testing
 ```
 
 **Expected Output:**
@@ -983,7 +983,7 @@ devmind session new --name="Test Session" --tag=testing
 
 #### Test 5: List Chat Sessions
 ```bash
-devmind session list
+yaver session list
 ```
 
 **Expected Output:**
@@ -999,16 +999,16 @@ devmind session list
 
 #### Test 6: Chat with Project Context Only
 ```bash
-devmind chat --project-id=test-project
+yaver chat --project-id=test-project
 ```
 
 **Expected Output:**
 ```
-🤖 DevMind AI Chat - Project: test-project
+🤖 Yaver AI Chat - Project: test-project
 💡 Tip: Ask anything about your code, get AI assistance
 
 You: How many functions are in this project?
-DevMind: [Responds based on test-project context only]
+Yaver: [Responds based on test-project context only]
 
 You: exit
 👋 Goodbye!
@@ -1016,18 +1016,18 @@ You: exit
 
 #### Test 7: Chat with Project and Session
 ```bash
-# Get SESSION_ID from devmind session list
-devmind chat --project-id=test-project --session-id=SESS_ID
+# Get SESSION_ID from yaver session list
+yaver chat --project-id=test-project --session-id=SESS_ID
 ```
 
 **Expected Output:**
 ```
-🤖 DevMind AI Chat - Project: test-project, Session: SESS_ID
+🤖 Yaver AI Chat - Project: test-project, Session: SESS_ID
 ```
 
 #### Test 8: Delete Project
 ```bash
-devmind project delete test-project
+yaver project delete test-project
 ```
 
 **Expected Confirmation:**
@@ -1040,7 +1040,7 @@ devmind project delete test-project
 
 #### Test 9: Verify Deletion
 ```bash
-devmind project list
+yaver project list
 ```
 
 **Expected Output:**
@@ -1048,26 +1048,26 @@ devmind project list
 📚 Learned Projects
 
 No projects found. Create one with:
-  devmind learn <path> --project-id=<name>
+  yaver learn <path> --project-id=<name>
 ```
 
 ### Verification Checklist
 
 - [ ] Project creation works with `--project-id` parameter
-- [ ] `devmind project list` shows all projects
-- [ ] `devmind project show` displays correct statistics
+- [ ] `yaver project list` shows all projects
+- [ ] `yaver project show` displays correct statistics
 - [ ] Chat with `--project-id` limits context to that project only
 - [ ] Chat with both `--project-id` and `--session-id` works
-- [ ] `devmind session list` shows all chat sessions (separate from projects)
+- [ ] `yaver session list` shows all chat sessions (separate from projects)
 - [ ] Project deletion removes all data from Neo4j
-- [ ] Help text is accurate: `devmind chat --help`, `devmind project --help`, `devmind session --help`
+- [ ] Help text is accurate: `yaver chat --help`, `yaver project --help`, `yaver session --help`
 
 ### Troubleshooting Tests
 
 **If projects don't appear in list:**
 ```bash
 # Check Neo4j connection
-devmind status
+yaver status
 
 # Verify database is running
 curl http://localhost:7687
@@ -1079,10 +1079,10 @@ env | grep NEO4J
 **If chat doesn't filter by project:**
 ```bash
 # Verify project exists first
-devmind project show test-project
+yaver project show test-project
 
 # Check RAG service is initialized
-devmind chat --project-id=test-project
+yaver chat --project-id=test-project
 # Look for "Initializing Semantic Engine..." messages
 ```
 
@@ -1113,19 +1113,19 @@ docker start qdrant
 **"No results in chat"**
 ```bash
 # Re-learn the repository
-devmind learn . --project-id=my-project
+yaver learn . --project-id=my-project
 
 # Check project has data
-devmind project show my-project
+yaver project show my-project
 ```
 
 **"Session not found"**
 ```bash
 # List all sessions
-devmind session list
+yaver session list
 
 # Use correct session ID
-devmind session show <correct-id>
+yaver session show <correct-id>
 ```
 
 ---
@@ -1134,26 +1134,26 @@ devmind session show <correct-id>
 
 ```bash
 # General help
-devmind --help
+yaver --help
 
 # Command-specific help
-devmind chat --help
-devmind learn --help
-devmind session --help
+yaver chat --help
+yaver learn --help
+yaver session --help
 ```
 
 ---
 
 ## Version Information
 
-Check DevMind version:
+Check Yaver version:
 ```bash
-devmind --version
+yaver --version
 ```
 
 ---
 
 **Last Updated:** February 3, 2026  
-**DevMind Version:** 1.0.0
+**Yaver Version:** 1.0.0
 
-For more information, visit the [DevMind Documentation](https://github.com/tevfik/devmind)
+For more information, visit the [Yaver Documentation](https://github.com/tevfik/yaver)

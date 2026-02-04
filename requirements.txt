@@ -1,4 +1,4 @@
-# DevMind AI - AI-Powered Development Assistant
+# Yaver AI - AI-Powered Development Assistant
 # Jules-like platform for git analysis, architecture, and iterative development
 
 # Core Framework

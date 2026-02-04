@@ -1,5 +1,5 @@
 """
-Agent Base Module - Core state and utilities for DevMind AI
+Agent Base Module - Core state and utilities for Yaver AI
 Inspired by IntelligentAgent and CodingAgent architectures
 """
 
@@ -39,7 +39,7 @@ def get_config():
     except Exception as e:
         # Fallback: return minimal config
         minimal = ConfigWrapper({
-            'logging': {'log_level': 'INFO', 'log_file': '/tmp/devmind.log'},
+            'logging': {'log_level': 'INFO', 'log_file': '/tmp/yaver.log'},
             'ollama': {'model_general': 'mistral', 'model_code': 'mistral', 'base_url': 'http://localhost:11434'}
         })
         return minimal
@@ -49,7 +49,7 @@ def get_config():
 # Rich Console for beautiful output
 # ============================================================================
 # Disable Rich console in worker mode to prevent JSON corruption
-if os.getenv('DEVMIND_NO_RICH'):
+if os.getenv('YAVER_NO_RICH'):
     CONSOLE = None
 else:
     CONSOLE = Console()
@@ -77,7 +77,7 @@ class JSONFormatter(logging.Formatter):
             log_obj["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_obj)
 
-def setup_logger(name: str = "devmind") -> logging.Logger:
+def setup_logger(name: str = "yaver") -> logging.Logger:
     """Setup rich logger with file and console handlers"""
     config = get_config()
     
@@ -93,12 +93,12 @@ def setup_logger(name: str = "devmind") -> logging.Logger:
     # Clear existing handlers
     logger.handlers.clear()
     
-    # Use log path from config (defaults to devmind/logs/devmind.log)
+    # Use log path from config (defaults to yaver/logs/yaver.log)
     log_file = getattr(config, 'logging', None)
     if log_file and hasattr(log_file, 'log_file'):
         log_path = Path(log_file.log_file).resolve()
     else:
-        log_path = Path.home() / '.devmind' / 'logs' / 'devmind.log'
+        log_path = Path.home() / '.yaver' / 'logs' / 'yaver.log'
     
     log_path.parent.mkdir(parents=True, exist_ok=True)
     
@@ -243,8 +243,8 @@ class RepositoryInfo(BaseModel):
 # ============================================================================
 # TypedDict for LangGraph State
 # ============================================================================
-class DevMindState(TypedDict, total=False):
-    """Main state for DevMind AI workflow"""
+class YaverState(TypedDict, total=False):
+    """Main state for Yaver AI workflow"""
     # User input
     user_request: str
     mode: str  # "analyze", "architect", "task_solve", "full_assistance"
@@ -506,7 +506,7 @@ def print_info(message: str):
 # ============================================================================
 if __name__ == "__main__":
     # Test module
-    print_section_header("DevMind AI - Agent Base Module Test", "🧪")
+    print_section_header("Yaver AI - Agent Base Module Test", "🧪")
     
     config = get_config()
     print_success(f"Config loaded: {config.ollama.model_general}")

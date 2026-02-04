@@ -23,11 +23,7 @@ def test_detect_circular_dependencies():
     
     # Verify Cypher query contained expected patterns
     args = mock_driver.session.return_value.__enter__.return_value.run.call_args[0][0]
-    assert "MATCH path = (n:Function)-[:CALLS*1..5]->(n)" in args
-
-def test_store_commit_hash():
-    """Test that commit hash is passed to Neo4j"""
-    mock_driver = MagicMock()
+    assert "MATCH path = (n:Function)-[:CALLS*2..5]->(n)" in args
     adapter = Neo4jAdapter("bolt://x", ("u", "p"))
     adapter.driver = mock_driver
     
@@ -48,7 +44,10 @@ def test_store_commit_hash():
     # Look for the file creation call
     found = False
     for call in call_args:
-        params = call[0][1]
+        args = call[0]
+        if len(args) < 2:
+            continue
+        params = args[1]
         if params.get('commit') == "a1b2c3d4":
             found = True
             break

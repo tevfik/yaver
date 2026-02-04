@@ -67,7 +67,7 @@ class RAGService:
         # based on user request.
         
         # We need to find the project root.
-        # devmind/src/tools/rag/rag_service.py -> ../../../
+        # yaver/src/tools/rag/rag_service.py -> ../../../
         current_file = Path(__file__)
         project_root = current_file.parent.parent.parent.parent
         prompt_path = project_root / "src/utils/prompts" / filename
@@ -203,7 +203,7 @@ class RAGService:
                     logger.error(f"Vector dimension mismatch detected. This happens when embedding model changes.")
                     logger.error(f"Current model '{self.config.model_embedding}' may produce different vector dimensions.")
                     logger.error(f"To fix: Delete the Qdrant collection and re-run analysis, or switch to the original embedding model.")
-                    logger.error(f"Command: qdrant-client delete-collection devmind_memory (or restart Qdrant)")
+                    logger.error(f"Command: qdrant-client delete-collection yaver_memory (or restart Qdrant)")
                 else:
                     logger.error(f"Semantic retrieval failed: {e}")
         
@@ -211,7 +211,7 @@ class RAGService:
         logger.info(f"Final context length: {len(final_context)} chars")
         return final_context
 
-    def answer(self, question: str, session_id: str = None, chat_history: List[Any] = None) -> str:
+    def answer(self, question: str, session_id: str = None, chat_history: List[Any] = None, extra_context: str = "") -> str:
         """
         End-to-end RAG pipeline.
         
@@ -219,6 +219,7 @@ class RAGService:
             question: User's question
             session_id: Optional session ID to query across multiple repos
             chat_history: List of previous messages for context
+            extra_context: Additional context to inject (e.g. static analysis findings)
         """
         # 0. Rewrite Query with History
         standalone_question = question
@@ -259,7 +260,12 @@ class RAGService:
         if "CHAT" in intent.upper():
             try:
                 # Use standalone_question for better context even in chat
-                chat_response = self.llm.invoke(standalone_question)
+                # If extra_context is provided, prepend it to the question
+                prompt_input = standalone_question
+                if extra_context:
+                    prompt_input = f"Context:\n{extra_context}\n\nQuestion: {standalone_question}"
+                
+                chat_response = self.llm.invoke(prompt_input)
                 return chat_response.content if hasattr(chat_response, 'content') else str(chat_response)
             except Exception as e:
                 logger.error(f"Chat LLM invocation failed: {e}")
@@ -267,6 +273,9 @@ class RAGService:
         
         # 2. Retrieve context for code-related queries (using standalone question)
         context = self.retrieve_context(standalone_question, strategy=intent, session_id=session_id)
+        
+        if extra_context:
+            context = f"{extra_context}\n\n{context}"
         
         if not context.strip():
             return "I couldn't find relevant information in the codebase to answer that."

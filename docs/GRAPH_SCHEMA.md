@@ -1,4 +1,4 @@
-# DevMind Graph Schema (Neo4j)
+# Yaver Graph Schema (Neo4j)
 
 This document describes the property graph model used to represent code structure.
 

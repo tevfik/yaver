@@ -31,7 +31,7 @@ def recreate_collection():
     # Connect to Qdrant
     client = QdrantClient(url=qdrant_url)
     
-    collection_name = "devmind_memory"
+    collection_name = "yaver_memory"
     
     # Check if collection exists
     try:
@@ -81,7 +81,7 @@ def recreate_collection():
         )
         print(f"✅ Created collection '{collection_name}' with {vector_size}-dimensional vectors")
         print(f"\n🔄 Now re-run your analysis command to populate the collection:")
-        print(f"   devmind analyze /path/to/repo --project-id <id> --type deep")
+        print(f"   yaver analyze /path/to/repo --project-id <id> --type deep")
     except Exception as e:
         print(f"❌ Error creating collection: {e}")
 

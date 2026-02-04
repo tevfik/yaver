@@ -9,10 +9,10 @@ This document describes the memory management system for handling multiple repos
 ### 1.1 Memory Infrastructure
 | Component | Technology | Location | Purpose |
 |-----------|-----------|----------|---------|
-| **Mem0AI** | Qdrant + Ollama Embeddings | `devmind_cli/memory/manager.py` | General purpose LLM memory |
+| **Mem0AI** | Qdrant + Ollama Embeddings | `yaver_cli/memory/manager.py` | General purpose LLM memory |
 | **Interaction Logging** | SQLite | `logs/interaction_history.sqlite` | Full LLM call history |
-| **Git Ops** | GitPython | `devmind_cli/git_ops.py` | Branch, Commit, PR operations |
-| **Config System** | Pydantic | `devmind_cli/config.py` | System configuration |
+| **Git Ops** | GitPython | `yaver_cli/git_ops.py` | Branch, Commit, PR operations |
+| **Config System** | Pydantic | `yaver_cli/config.py` | System configuration |
 
 **Analysis:** Memory is "User-based". No Repo ID stored.
 
@@ -33,8 +33,8 @@ class GitOps:
 
 ### 1.3 CLI Arguments
 ```bash
-devmind solve --file buggy_script.py "Fix bugs"
-devmind edit --file src/main.py --request "Add docstrings"
+yaver solve --file buggy_script.py "Fix bugs"
+yaver edit --file src/main.py --request "Add docstrings"
 ```
 
 **Analysis:** CLI receives `--file` as file path only, no repo info.
@@ -90,7 +90,7 @@ class MemoryManager:
     def __init__(self, user_id: str = "default_user"):
         self.user_id = user_id  # Only user_id, no repo_id
         self.memory = Memory.from_config(config)
-        # Qdrant collection name: "devmind_memory" (global/shared)
+        # Qdrant collection name: "yaver_memory" (global/shared)
 ```
 
 **Problem:** Qdrant collection is shared across all repos.
@@ -103,7 +103,7 @@ class MemoryManager:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│             DEVMIND CLI COMMAND                     │
+│             YAVER CLI COMMAND                     │
 │         (From which directory is it running?)       │
 └──────────────────┬──────────────────────────────────┘
                    │
@@ -183,7 +183,7 @@ CREATE TABLE interactions_v2 (
     repo_id TEXT NOT NULL,           -- Hash of git remote
     repo_path TEXT,                  -- /home/user/project
     git_remote_url TEXT,             -- https://github.com/user/repo
-    branch_name TEXT,                -- devmind/feature/fix-123
+    branch_name TEXT,                -- yaver/feature/fix-123
     
     -- Metadata
     agent_type TEXT,                 -- "coder", "reviewer", "planner"
@@ -211,7 +211,7 @@ CREATE INDEX idx_repo_timestamp ON interactions_v2(repo_id, timestamp);
 
 ```python
 # Today:
-QDRANT_COLLECTION = "devmind_memory"  # Global
+QDRANT_COLLECTION = "yaver_memory"  # Global
 
 # New:
 QDRANT_COLLECTION = "repo_{repo_id}_memory"
@@ -229,7 +229,7 @@ QDRANT_COLLECTION_SHARED = "shared_patterns_memory"
 ### **Phase 1: Foundation (1-2 days)**
 
 #### 1.1 Repo ID Extraction Module
-**File:** `devmind_cli/repo_manager.py`
+**File:** `yaver_cli/repo_manager.py`
 ```python
 class RepositoryManager:
     def __init__(self, repo_path: str = "."):
@@ -253,7 +253,7 @@ class RepositoryManager:
 ```
 
 #### 1.3 Git Ops Repo ID Integration
-**File:** `devmind_cli/git_ops.py` (Update)
+**File:** `yaver_cli/git_ops.py` (Update)
 ```python
 class GitOps:
     def __init__(self, repo_path: str = "."):
@@ -268,7 +268,7 @@ class GitOps:
 ### **Phase 2: Memory System Integration (2-3 days)**
 
 #### 2.1 Memory Manager Update
-**File:** `devmind_cli/memory/manager.py` (Refactor)
+**File:** `yaver_cli/memory/manager.py` (Refactor)
 ```python
 class MemoryManager:
     def __init__(self, user_id: str = "default_user", repo_id: str = None):
@@ -288,7 +288,7 @@ class MemoryManager:
 ```
 
 #### 2.2 InteractionDB Update
-**File:** `devmind_cli/interaction_logger.py` (Update)
+**File:** `yaver_cli/interaction_logger.py` (Update)
 ```python
 class InteractionDB:
     def log_interaction(self, 
@@ -303,9 +303,9 @@ class InteractionDB:
 ```
 
 #### 2.3 CLI Context Manager
-**File:** `devmind_cli/cli_context.py` (NEW)
+**File:** `yaver_cli/cli_context.py` (NEW)
 ```python
-class DevMindContext:
+class YaverContext:
     """Global context holder for current CLI invocation"""
     _current_repo_id: str = None
     _current_memory: MemoryManager = None
@@ -320,37 +320,37 @@ class DevMindContext:
 ### **Phase 3: CLI Integration (1 day)**
 
 #### 3.1 Context Initialization in cli.py
-**File:** `devmind_cli/cli.py` (Update)
+**File:** `yaver_cli/cli.py` (Update)
 ```python
 def main():
     setup_logger()
     
     # ✨ NEW: Set repo context at start of every command
-    DevMindContext.initialize(repo_path=".")
+    YaverContext.initialize(repo_path=".")
     
     parser = argparse.ArgumentParser(...)
     # ... rest of CLI setup
 ```
 
 #### 3.2 `handle_solve` Update
-**File:** `devmind_cli/cli_solve.py` (Update)
+**File:** `yaver_cli/cli_solve.py` (Update)
 ```python
 def handle_solve(args):
     # Repo ID auto-read
-    repo_id = DevMindContext._current_repo_id
-    mem_manager = DevMindContext._current_memory
+    repo_id = YaverContext._current_repo_id
+    mem_manager = YaverContext._current_memory
     
     # Inject repo context during planning phase
     feedback_for_planner += f"\nRepo Context: {mem_manager.search_memory('architecture')}"
 ```
 
 #### 3.3 Logging Callback Update
-**File:** `devmind_cli/interaction_logger.py` (Update)
+**File:** `yaver_cli/interaction_logger.py` (Update)
 ```python
 class SQLLoggingCallback(BaseCallbackHandler):
     def __init__(self, model_name: str = "unknown", repo_id: str = None):
         self.db = InteractionDB()
-        self.repo_id = repo_id or DevMindContext._current_repo_id
+        self.repo_id = repo_id or YaverContext._current_repo_id
         self.agent_type = "unknown"
     
     def on_llm_end(self, ...):
@@ -414,7 +414,7 @@ AUTO_DETECT_REPO=True                   # Auto-read repo_id from folder
 
 ### ✅ Success Criteria
 
-1. **Repo Switching Seamless:** `cd ProjectA && devmind solve` → ProjectA memories
+1. **Repo Switching Seamless:** `cd ProjectA && yaver solve` → ProjectA memories
 2. **No Context Pollution:** ProjectA decisions don't affect ProjectB
 3. **Backward Compat:** Old `interactions` table continues working
 4. **Performance:** Repo-specific queries <500ms
@@ -452,7 +452,7 @@ AUTO_DETECT_REPO=True                   # Auto-read repo_id from folder
 **Implementation Time:** ~4-5 days (phased approach)
 
 ---
-# DevMind Architecture Update - Implementation Summary
+# Yaver Architecture Update - Implementation Summary
 
 **Date:** February 3, 2026  
 **Version:** 1.0.0  
@@ -462,7 +462,7 @@ AUTO_DETECT_REPO=True                   # Auto-read repo_id from folder
 
 ## 🎯 Objective
 
-Implement clear separation between two session types in DevMind:
+Implement clear separation between two session types in Yaver:
 - **Chat Sessions** (conversation history)
 - **Projects** (learned repository groups)
 
@@ -474,22 +474,22 @@ Implement clear separation between two session types in DevMind:
 
 #### Session Commands (Chat History)
 ```bash
-devmind session new --name="Name" --tag=tag1
-devmind session list
-devmind session show <id>
-devmind session set <id>
-devmind session current
-devmind session tag <id> <tag>
-devmind session delete <id>
+yaver session new --name="Name" --tag=tag1
+yaver session list
+yaver session show <id>
+yaver session set <id>
+yaver session current
+yaver session tag <id> <tag>
+yaver session delete <id>
 ```
 
 **Purpose:** Organize and manage chat conversations
 
 #### Project Commands (Learning Sessions)
 ```bash
-devmind project list
-devmind project show <project-id>
-devmind project delete <project-id> [--force]
+yaver project list
+yaver project show <project-id>
+yaver project delete <project-id> [--force]
 ```
 
 **Purpose:** Manage learned repository groups
@@ -498,28 +498,28 @@ devmind project delete <project-id> [--force]
 
 ```bash
 # Chat with all learned repositories
-devmind chat
+yaver chat
 
 # Chat with specific project context only
-devmind chat --project-id=my-saas-app
+yaver chat --project-id=my-saas-app
 
 # Use specific chat session for history
-devmind chat --session-id=debugging-session
+yaver chat --session-id=debugging-session
 
 # Combine both
-devmind chat --project-id=my-saas-app --session-id=debugging-session
+yaver chat --project-id=my-saas-app --session-id=debugging-session
 ```
 
 ### 3. Learning Workflow
 
 ```bash
 # Create a project by learning repositories
-devmind learn /path/to/backend --project-id=my-saas-app
-devmind learn /path/to/frontend --project-id=my-saas-app
-devmind learn /path/to/auth --project-id=my-saas-app
+yaver learn /path/to/backend --project-id=my-saas-app
+yaver learn /path/to/frontend --project-id=my-saas-app
+yaver learn /path/to/auth --project-id=my-saas-app
 
 # Now chat with entire project
-devmind chat --project-id=my-saas-app
+yaver chat --project-id=my-saas-app
 ```
 
 ---
@@ -630,10 +630,10 @@ All 5 test categories passed:
 
 ```bash
 # Learn a repository
-devmind learn ~/projects/api-server --project-id=backend-service
+yaver learn ~/projects/api-server --project-id=backend-service
 
 # Chat with this project
-devmind chat --project-id=backend-service
+yaver chat --project-id=backend-service
 
 # Questions will be answered using backend-service context only
 ```
@@ -642,29 +642,29 @@ devmind chat --project-id=backend-service
 
 ```bash
 # Learn multiple related repositories
-devmind learn ~/projects/backend --project-id=microservices
-devmind learn ~/projects/frontend --project-id=microservices
-devmind learn ~/projects/mobile --project-id=microservices
+yaver learn ~/projects/backend --project-id=microservices
+yaver learn ~/projects/frontend --project-id=microservices
+yaver learn ~/projects/mobile --project-id=microservices
 
 # Chat with all three together
-devmind chat --project-id=microservices
+yaver chat --project-id=microservices
 
 # Check project details
-devmind project show microservices
+yaver project show microservices
 ```
 
 ### Example 3: Organized Chat Sessions
 
 ```bash
 # Create chat sessions for different topics
-devmind session new --name="Payment Feature" --tag=feature --tag=payment
-devmind session new --name="Bug Investigation" --tag=debug
+yaver session new --name="Payment Feature" --tag=feature --tag=payment
+yaver session new --name="Bug Investigation" --tag=debug
 
 # Chat about payment feature with backend project context
-devmind chat --project-id=microservices --session-id=payment-feature
+yaver chat --project-id=microservices --session-id=payment-feature
 
 # Chat about a bug in the backend
-devmind chat --project-id=backend-service --session-id=bug-investigation
+yaver chat --project-id=backend-service --session-id=bug-investigation
 ```
 
 ---
@@ -678,9 +678,9 @@ devmind chat --project-id=backend-service --session-id=bug-investigation
 ./test_architecture.sh
 
 # Manual verification
-devmind project --help
-devmind session --help
-devmind chat --help
+yaver project --help
+yaver session --help
+yaver chat --help
 ```
 
 ### Full Test (20 minutes)
@@ -698,14 +698,14 @@ Follow the step-by-step guide in [CLI_GUIDE.md](CLI_GUIDE.md#testing--verificati
 
 ## 📋 Checklist for Verification
 
-- [x] `devmind project list` command works
-- [x] `devmind project show <id>` shows correct statistics
-- [x] `devmind project delete <id>` removes data from Neo4j
-- [x] `devmind session new` creates chat sessions
-- [x] `devmind session list` shows chat sessions (separate from projects)
-- [x] `devmind chat --project-id=<id>` limits context to project
-- [x] `devmind chat --session-id=<id>` uses chat history
-- [x] `devmind chat --project-id=X --session-id=Y` works together
+- [x] `yaver project list` command works
+- [x] `yaver project show <id>` shows correct statistics
+- [x] `yaver project delete <id>` removes data from Neo4j
+- [x] `yaver session new` creates chat sessions
+- [x] `yaver session list` shows chat sessions (separate from projects)
+- [x] `yaver chat --project-id=<id>` limits context to project
+- [x] `yaver chat --session-id=<id>` uses chat history
+- [x] `yaver chat --project-id=X --session-id=Y` works together
 - [x] Help text accurate and clear
 - [x] Documentation updated in CLI_GUIDE.md
 - [x] No backwards compatibility issues
@@ -736,8 +736,8 @@ Follow the step-by-step guide in [CLI_GUIDE.md](CLI_GUIDE.md#testing--verificati
 
 For issues or clarifications:
 1. Check [CLI_REFERENCE.md](CLI_REFERENCE.md) Testing & Verification section
-2. Check Neo4j and Qdrant connection: `devmind status`
-3. Review command help: `devmind <command> --help`
+2. Check Neo4j and Qdrant connection: `yaver status`
+3. Review command help: `yaver <command> --help`
 
 ---
 

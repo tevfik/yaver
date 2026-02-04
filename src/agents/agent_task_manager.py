@@ -12,12 +12,12 @@ from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 
 from .agent_base import (
-    DevMindState, Task, TaskStatus, TaskPriority,
+    YaverState, Task, TaskStatus, TaskPriority,
     logger, print_section_header, print_success, print_warning, print_info,
     create_llm, create_task_id, format_log_entry, retrieve_relevant_context
 )
 from .config import get_config
-from .api_client import DevMindClient
+from .api_client import YaverClient
 
 
 # ============================================================================
@@ -211,7 +211,7 @@ def execute_task_with_llm(task: Task, context: Dict) -> Dict[str, any]:
         for comment in task.comments:
              author = comment.get('author', 'User')
              content = comment.get('content', '')
-             if author != "DevMind Worker": # Skip own auto-generated comments
+             if author != "Yaver Worker": # Skip own auto-generated comments
                 context_str += f"- [{author}]: {content}\n"
 
     from prompts import TASK_SOLVER_PROMPT
@@ -287,7 +287,7 @@ def update_task_status(tasks: List[Task], task_id: str, status: TaskStatus, resu
 # ============================================================================
 # Iteration Engine
 # ============================================================================
-def run_iteration_cycle(state: DevMindState) -> dict:
+def run_iteration_cycle(state: YaverState) -> dict:
     """Run one iteration of task execution"""
     config = get_config()
     
@@ -362,7 +362,7 @@ def run_iteration_cycle(state: DevMindState) -> dict:
 # ============================================================================
 # Main Agent Node
 # ============================================================================
-def task_manager_node(state: DevMindState) -> dict:
+def task_manager_node(state: YaverState) -> dict:
     """Main task manager agent node"""
     logger.info("📋 Task Manager Agent started")
     
@@ -404,7 +404,7 @@ def task_manager_node(state: DevMindState) -> dict:
         return run_iteration_cycle(state)
 
 
-def execute_specific_task(state: DevMindState, task_data: dict) -> dict:
+def execute_specific_task(state: YaverState, task_data: dict) -> dict:
     """Execute a specific provided task"""
     # Convert dict to Task object if needed
     try:
@@ -428,10 +428,10 @@ def execute_specific_task(state: DevMindState, task_data: dict) -> dict:
     }
     
     # Init API Client
-    client = DevMindClient()
+    client = YaverClient()
     
     # Notify start
-    client.add_comment(task.id, f"🚀 Task execution started via Python Worker\nPriority: {task.priority.value}", author="DevMind Worker")
+    client.add_comment(task.id, f"🚀 Task execution started via Python Worker\nPriority: {task.priority.value}", author="Yaver Worker")
 
     # Execute task with LLM
     result = execute_task_with_llm(task, context)
@@ -481,11 +481,11 @@ def execute_specific_task(state: DevMindState, task_data: dict) -> dict:
                 applied_files.append(file_path)
             except Exception as e:
                 logger.error(f"Failed to write file {file_path}: {e}")
-                client.add_comment(task.id, f"❌ Failed to write file {file_path}: {e}", author="DevMind Worker")
+                client.add_comment(task.id, f"❌ Failed to write file {file_path}: {e}", author="Yaver Worker")
 
         if applied_files:
             file_list = ", ".join(applied_files)
-            client.add_comment(task.id, f"📝 Modified files:\n- " + "\n- ".join(applied_files), author="DevMind Worker")
+            client.add_comment(task.id, f"📝 Modified files:\n- " + "\n- ".join(applied_files), author="Yaver Worker")
 
         # 2. Git Commit
         # We assume gitpython is available as it is a dependency
@@ -507,10 +507,10 @@ def execute_specific_task(state: DevMindState, task_data: dict) -> dict:
                     commit_msg = f"feat: {task.title} (Task {task.id[:8]})"
                     repo.index.commit(commit_msg)
                     logger.info("Changes committed to git.")
-                    client.add_comment(task.id, f"💾 Changes committed to git.\nMessage: `{commit_msg}`", author="DevMind Worker")
+                    client.add_comment(task.id, f"💾 Changes committed to git.\nMessage: `{commit_msg}`", author="Yaver Worker")
             except (git.InvalidGitRepositoryError, Exception) as e:
                 logger.warning(f"Git operation failed: {e}")
-                client.add_comment(task.id, f"⚠️ Git operation failed: {e}", author="DevMind Worker")
+                client.add_comment(task.id, f"⚠️ Git operation failed: {e}", author="Yaver Worker")
         except ImportError:
             pass
 

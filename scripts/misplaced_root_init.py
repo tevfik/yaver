@@ -1,3 +1,3 @@
 """
-DevMind AI - Backend Package
+Yaver AI - Backend Package
 """

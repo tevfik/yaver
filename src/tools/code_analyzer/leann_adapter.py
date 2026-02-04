@@ -36,10 +36,10 @@ class LeannAdapter:
         self.session_id = session_id
         
         # Determine storage path
-        # Default to ~/.devmind/leann_indexes/{session_id}
+        # Default to ~/.yaver/leann_indexes/{session_id}
         # Or obey some config if provided
         home = Path(os.path.expanduser("~"))
-        self.base_path = home / ".devmind" / "leann_indexes" / self.session_id
+        self.base_path = home / ".yaver" / "leann_indexes" / self.session_id
         
         if not self.base_path.exists():
             self.base_path.mkdir(parents=True, exist_ok=True)

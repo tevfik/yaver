@@ -22,12 +22,12 @@ class CachingManager:
         Initialize caching manager.
         
         Args:
-            cache_dir: custom cache directory (default: ~/.devmind/cache/ast)
+            cache_dir: custom cache directory (default: ~/.yaver/cache/ast)
         """
         if cache_dir:
             self.base_dir = cache_dir
         else:
-            self.base_dir = Path.home() / ".devmind" / "cache" / "ast"
+            self.base_dir = Path.home() / ".yaver" / "cache" / "ast"
             
         self.base_dir.mkdir(parents=True, exist_ok=True)
         

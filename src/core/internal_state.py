@@ -1,5 +1,5 @@
 """
-Internal State Management System for DevMind
+Internal State Management System for Yaver
 
 Tracks which repository is currently active, metadata about the repo,
 memory configuration, and provides visibility into the system's context.
@@ -17,12 +17,12 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
-logger = logging.getLogger("devmind_cli.internal_state")
+logger = logging.getLogger("yaver_cli.internal_state")
 
 
 @dataclass
 class RepositoryState:
-    """Complete state of a repository in DevMind's memory"""
+    """Complete state of a repository in Yaver's memory"""
     
     repo_id: str                          # Unique identifier (hash of remote URL)
     git_remote_url: str                   # https://github.com/user/project
@@ -75,7 +75,7 @@ class RepositoryState:
 
 class InternalStateManager:
     """
-    Manages the internal state of DevMind across multiple repositories.
+    Manages the internal state of Yaver across multiple repositories.
     Provides visibility into which repo is active and what resources are allocated.
     """
     
@@ -86,7 +86,7 @@ class InternalStateManager:
         if not state_file:
             log_dir = Path(__file__).parent.parent / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
-            state_file = str(log_dir / "devmind_state.json")
+            state_file = str(log_dir / "yaver_state.json")
         
         self.state_file = Path(state_file)
         self.console = Console()
@@ -127,7 +127,7 @@ class InternalStateManager:
         
         # Auto-detect from git if needed
         if not git_remote_url or not git_branch or not git_commit_hash:
-            from devmind_cli.repo_manager import RepositoryManager
+            from yaver_cli.repo_manager import RepositoryManager
             
             try:
                 repo_mgr = RepositoryManager(repo_path)
@@ -235,7 +235,7 @@ class InternalStateManager:
         state = self.current_repo
         
         # Repository info table
-        repo_table = Table(title="📍 DevMind Repository Context", show_header=False)
+        repo_table = Table(title="📍 Yaver Repository Context", show_header=False)
         repo_table.add_row("Repository", f"[blue]{state.git_remote_url}[/blue]")
         repo_table.add_row("Repo ID", f"[cyan]{state.repo_id}[/cyan]")
         repo_table.add_row("Local Path", f"[yellow]{state.local_path}[/yellow]")

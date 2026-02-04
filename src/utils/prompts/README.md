@@ -1,6 +1,6 @@
 # Prompts Directory
 
-This directory contains the System and User prompts for the DevMind AI agents.
+This directory contains the System and User prompts for the Yaver AI agents.
 The prompts are stored as external Markdown files to allow for easier editing and versioning (Prompt Engineering) without modifying the Python code.
 
 ## File Naming Convention
@@ -45,7 +45,7 @@ All **System Prompts** must follow this standard structure to maintain consisten
 # Role: [Role Name]
 
 ## Profile
-- **Author**: DevMind AI
+- **Author**: Yaver AI
 - **Version**: [x.x]
 - **Language**: English
 - **Description**: [Brief description]
@@ -75,10 +75,10 @@ All **System Prompts** must follow this standard structure to maintain consisten
 
 ## How to use in Python
 
-Prompts are loaded via `devmind.prompts` module.
+Prompts are loaded via `yaver.prompts` module.
 
 ```python
-from devmind.prompts import load_prompt_template, load_raw_prompt
+from yaver.prompts import load_prompt_template, load_raw_prompt
 
 # 1. Loading a System Prompt (usually raw string for SystemMessage)
 system_prompt_str = load_raw_prompt("coder_system.md")

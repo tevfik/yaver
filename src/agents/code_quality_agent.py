@@ -33,14 +33,14 @@ class CodeQualityAgent:
         Args:
             project_id: Project identifier
             neo4j_adapter: Neo4j connection
-            agent_base: DevMind agent (for LLM access)
+            agent_base: Yaver agent (for LLM access)
         """
         self.project_id = project_id
         self.neo4j = neo4j_adapter
         self.agent = agent_base
         
         # State storage
-        self.state_dir = Path.home() / ".devmind" / "projects" / project_id / "agent"
+        self.state_dir = Path.home() / ".yaver" / "projects" / project_id / "agent"
         self.state_dir.mkdir(parents=True, exist_ok=True)
         
         self._load_state()
@@ -84,13 +84,13 @@ class CodeQualityAgent:
         
         # Step 2: ANALYZE
         logger.info("[Agent] ANALYZE: Gathering metrics")
-        from src.tools.metrics import MetricsAnalyzer
+        from tools.metrics import MetricsAnalyzer
         analyzer = MetricsAnalyzer(self.neo4j)
         metrics = analyzer.analyze_repository(self.project_id)
         
         # Step 3: EVALUATE
         logger.info("[Agent] EVALUATE: Reasoning with LLM")
-        from src.agents.decision_engine import DecisionEngine
+        from agents.decision_engine import DecisionEngine
         decision_engine = DecisionEngine(self.agent)
         decisions = decision_engine.reason_about_issues(metrics)
         
@@ -112,7 +112,7 @@ class CodeQualityAgent:
     def _observe_changes(self) -> Dict[str, Any]:
         """Detect changes since last analysis"""
         
-        from src.core.git_helper import GitHelper
+        from core.git_helper import GitHelper
         
         git = GitHelper(Path.cwd())
         
@@ -151,7 +151,17 @@ class CodeQualityAgent:
     
     def _generate_report(self, metrics: Dict, decisions: List, changes: Dict) -> Dict[str, Any]:
         """Generate human-readable analysis report"""
+        from dataclasses import asdict, is_dataclass
         
+        def to_dict(obj):
+            if is_dataclass(obj):
+                return asdict(obj)
+            if isinstance(obj, list):
+                return [to_dict(x) for x in obj]
+            if isinstance(obj, dict):
+                return {k: to_dict(v) for k, v in obj.items()}
+            return obj
+            
         summary = metrics.get("summary", {})
         quality = metrics.get("quality_score")
         
@@ -167,7 +177,7 @@ class CodeQualityAgent:
                 "circular_deps": summary.get("circular_deps_count", 0)
             },
             "changes": changes,
-            "metrics": metrics,
+            "metrics": to_dict(metrics),
             "recommendations": []
         }
         

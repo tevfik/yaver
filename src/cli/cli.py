@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-DevMind AI - Command Line Interface
+Yaver AI - Command Line Interface
 Full-featured CLI with all commands
 """
 
@@ -66,20 +66,20 @@ def format_response(response, title=None):
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(
-        description="DevMind AI - Development Assistant",
+        description="Yaver AI - Development Assistant",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  devmind setup              Run initial setup wizard
-  devmind new myproject      Create a new Python project
-  devmind new api --type fastapi  Create FastAPI project
-  devmind docker status      Check Docker services
-  devmind chat               Start interactive AI chat
-  devmind learn              Deep learn current repository (AST + embeddings)
-  devmind learn /path/repo   Learn a specific repository
-  devmind commit             Generate commit message
-  devmind explain "command"  Explain a shell command
-  devmind --version          Show version
+  yaver setup              Run initial setup wizard
+  yaver new myproject      Create a new Python project
+  yaver new api --type fastapi  Create FastAPI project
+  yaver docker status      Check Docker services
+  yaver chat               Start interactive AI chat
+  yaver learn              Deep learn current repository (AST + embeddings)
+  yaver learn /path/repo   Learn a specific repository
+  yaver commit             Generate commit message
+  yaver explain "command"  Explain a shell command
+  yaver --version          Show version
         """
     )
     
@@ -87,7 +87,7 @@ Examples:
     parser.add_argument(
         '--version',
         action='version',
-        version='DevMind v1.1.0'
+        version='Yaver v1.1.0'
     )
     
     # Subcommands
@@ -127,7 +127,7 @@ Examples:
     # ========== SESSION MANAGEMENT (Chat History) ==========
     session_parser = subparsers.add_parser(
         'session',
-        help='Manage DevMind chat sessions with tags'
+        help='Manage Yaver chat sessions with tags'
     )
     session_subparsers = session_parser.add_subparsers(
         dest='session_action',
@@ -168,7 +168,7 @@ Examples:
     # ========== PROJECT MANAGEMENT (Learning Sessions) ==========
     project_parser = subparsers.add_parser(
         'project',
-        help='Manage DevMind projects (multi-repo learning)'
+        help='Manage Yaver projects (multi-repo learning)'
     )
     project_subparsers = project_parser.add_subparsers(
         dest='project_action',
@@ -238,7 +238,7 @@ Examples:
     # Learn command - Deprecated, now alias to analyze --type deep
     learn_parser = subparsers.add_parser(
         'learn',
-        help='[DEPRECATED] Use: devmind analyze --type deep'
+        help='[DEPRECATED] Use: yaver analyze --type deep'
     )
     learn_parser.add_argument('path', nargs='?', default='.', help='Path to repository (default: current dir)')
     learn_parser.add_argument('--incremental', action='store_true', help='Only analyze changed files')
@@ -406,9 +406,9 @@ Examples:
 
 def handle_setup(args):
     """Handle setup command"""
-    from config.onboarding import DevMindSetupWizard
+    from config.onboarding import YaverSetupWizard
     
-    wizard = DevMindSetupWizard()
+    wizard = YaverSetupWizard()
     
     # Check if non-interactive mode (for CI/CD)
     if hasattr(args, 'non_interactive') and args.non_interactive:
@@ -420,7 +420,7 @@ def handle_setup(args):
             "NEO4J_URI": "bolt://localhost:7687",
             "NEO4J_USER": "neo4j",
             "NEO4J_PASSWORD": "password",
-            "CHROMA_PERSIST_DIR": ".devmind/chroma_db",
+            "CHROMA_PERSIST_DIR": ".yaver/chroma_db",
         }
         wizard.save_env_file(config)
         print("✅ Setup complete (non-interactive mode)!")
@@ -482,7 +482,7 @@ def handle_session(args):
     
     if not args.session_action:
         print("❌ Error: Please specify a session action")
-        print("   Try: devmind session --help")
+        print("   Try: yaver session --help")
         return
     
     # New session
@@ -501,7 +501,7 @@ def handle_session(args):
         sessions = session_mgr.list_sessions()
         if not sessions:
             print("\n[yellow]No chat sessions found. Create one with:[/yellow]")
-            print("[dim]  devmind session new --name=myproject[/dim]\n")
+            print("[dim]  yaver session new --name=myproject[/dim]\n")
             return
         
         print(f"\n[bold cyan]💬 Chat Sessions[/bold cyan]\n")
@@ -589,7 +589,7 @@ def handle_project(args):
     """Handle project management commands (learning sessions)"""
     if not args.project_action:
         print("❌ Error: Please specify a project action")
-        print("   Try: devmind project --help")
+        print("   Try: yaver project --help")
         return
     
     # List projects
@@ -618,7 +618,7 @@ def handle_status(args):
     config = get_config()
     
     print("\n" + "="*60)
-    print("DevMind System Status")
+    print("Yaver System Status")
     print("="*60)
     
     if config:
@@ -627,7 +627,7 @@ def handle_status(args):
         print(f"   Qdrant: {config.get('QDRANT_URL', 'not configured')}")
         print(f"   Neo4j: {config.get('NEO4J_URI', 'not configured')}")
     else:
-        print("\n⚠️  No configuration found. Run 'devmind setup' first.")
+        print("\n⚠️  No configuration found. Run 'yaver setup' first.")
     
     print("\n" + "="*60)
 
@@ -638,13 +638,13 @@ def handle_chat(args):
     session_id = getattr(args, 'session_id', None)
     
     if project_id and session_id:
-        print(f"\n🤖 DevMind AI Chat - Project: {project_id}, Session: {session_id}")
+        print(f"\n🤖 Yaver AI Chat - Project: {project_id}, Session: {session_id}")
     elif project_id:
-        print(f"\n🤖 DevMind AI Chat - Project: {project_id}")
+        print(f"\n🤖 Yaver AI Chat - Project: {project_id}")
     elif session_id:
-        print(f"\n🤖 DevMind AI Chat - Session: {session_id}")
+        print(f"\n🤖 Yaver AI Chat - Session: {session_id}")
     else:
-        print("\n🤖 DevMind AI Chat (Type 'exit' to quit)")
+        print("\n🤖 Yaver AI Chat (Type 'exit' to quit)")
     
     print("💡 Tip: Ask anything about your code, get AI assistance\n")
     
@@ -670,7 +670,7 @@ def handle_chat(args):
                     continue
                 
                 # Get AI response
-                console.print("\n[cyan]DevMind:[/cyan]")
+                console.print("\n[cyan]Yaver:[/cyan]")
                 with console.status("[bold green]Thinking...[/bold green]", spinner="dots"):
                     response = agent.chat(user_input)
                 
@@ -902,8 +902,8 @@ def handle_learn_deprecated(args):
     from rich.console import Console
     
     console = Console()
-    console.print("\n[yellow]⚠️  WARNING: 'devmind learn' is deprecated![/yellow]")
-    console.print("[yellow]   Use 'devmind analyze --type deep' instead[/yellow]\n")
+    console.print("\n[yellow]⚠️  WARNING: 'yaver learn' is deprecated![/yellow]")
+    console.print("[yellow]   Use 'yaver analyze --type deep' instead[/yellow]\n")
     
     # Convert old args to new args format
     class NewArgs:
@@ -1104,8 +1104,8 @@ def handle_learn(args):
         analyzer.close()
         
         console.print(f"\n[dim]💡 You can now query this repository with:[/dim]")
-        console.print(f"[dim]   • devmind chat (for semantic queries)[/dim]")
-        console.print(f"[dim]   • devmind simulate <file> <function> (for impact analysis)[/dim]")
+        console.print(f"[dim]   • yaver chat (for semantic queries)[/dim]")
+        console.print(f"[dim]   • yaver simulate <file> <function> (for impact analysis)[/dim]")
         
     except Exception as e:
         console.print(f"\n[bold red]❌ Learning Failed:[/bold red] {str(e)}")
@@ -1213,7 +1213,7 @@ def handle_visualize(args):
         
         output_path = repo_path / args.output
         
-        content = f"# Codebase Structure ({args.type})\n\nGenerated by DevMind Deep Analysis.\n\n```mermaid\n{mermaid_code}\n```\n"
+        content = f"# Codebase Structure ({args.type})\n\nGenerated by Yaver Deep Analysis.\n\n```mermaid\n{mermaid_code}\n```\n"
         
         output_path.write_text(content)
         console.print(f"[bold green]✅ Visualization saved to:[/bold green] {output_path}")
@@ -1263,7 +1263,7 @@ def handle_commit(args):
     except ImportError as e:
         print(f"⚠️  AI features not available: {e}")
     except AttributeError:
-        print(f"⚠️  Configuration error. Please run: devmind setup")
+        print(f"⚠️  Configuration error. Please run: yaver setup")
     except Exception as e:
         print(f"❌ Error: {e}")
 
@@ -1318,10 +1318,10 @@ def handle_explain(args):
     elif not sys.stdin.isatty():
         command = sys.stdin.read().strip()
         if not command:
-            print("❌ Error: No command provided. Usage: devmind explain <command>")
+            print("❌ Error: No command provided. Usage: yaver explain <command>")
             return
     else:
-        print("❌ Error: No command provided. Usage: devmind explain <command>")
+        print("❌ Error: No command provided. Usage: yaver explain <command>")
         return
     
     print(f"\n📖 Explaining command: {command}\n")
@@ -1470,10 +1470,10 @@ def handle_suggest(args):
     elif not sys.stdin.isatty():
         prompt = sys.stdin.read().strip()
         if not prompt:
-            print("❌ Error: No prompt provided. Usage: devmind suggest <description>")
+            print("❌ Error: No prompt provided. Usage: yaver suggest <description>")
             return
     else:
-        print("❌ Error: No prompt provided. Usage: devmind suggest <description>")
+        print("❌ Error: No prompt provided. Usage: yaver suggest <description>")
         return
     
     print(f"\n💡 Suggesting command for: {prompt}\n")
@@ -1495,7 +1495,7 @@ def handle_suggest(args):
     except ImportError as e:
         print(f"⚠️  AI features not available: {e}")
     except AttributeError as e:
-        print(f"⚠️  Configuration error. Please run: devmind setup")
+        print(f"⚠️  Configuration error. Please run: yaver setup")
     except Exception as e:
         print(f"❌ Error: {e}")
 
@@ -1513,10 +1513,10 @@ def handle_new(args):
     # Validate project name
     if not project_name:
         print("❌ Error: Project name cannot be empty!")
-        print("Usage: devmind new <project_name> [--type <type>]")
+        print("Usage: yaver new <project_name> [--type <type>]")
         print("\nExample:")
-        print("  devmind new my_project")
-        print("  devmind new api --type fastapi")
+        print("  yaver new my_project")
+        print("  yaver new api --type fastapi")
         return
     
     # Project name must be valid for filesystem
@@ -1529,10 +1529,10 @@ def handle_new(args):
         print("❌ Error: Invalid project name!")
         print("   Project names can only contain: letters, numbers, dash (-), underscore (_), dot (.)")
         print("\nValid examples:")
-        print("  devmind new my_project")
-        print("  devmind new my-project")
-        print("  devmind new MyProject")
-        print("  devmind new project_v2.0")
+        print("  yaver new my_project")
+        print("  yaver new my-project")
+        print("  yaver new MyProject")
+        print("  yaver new project_v2.0")
         return
     
     # Cannot start with dash or dot
@@ -1595,7 +1595,7 @@ def handle_new(args):
                 for step in structure["next_steps"]:
                     print(f"   • {step}")
             print(f"\n   cd {project_name}")
-            print(f"   devmind chat  # Get AI help with your project\n")
+            print(f"   yaver chat  # Get AI help with your project\n")
             
         except json.JSONDecodeError:
             # Fallback to template-based generation if AI response can't be parsed
@@ -1618,7 +1618,7 @@ def handle_new(args):
             print(f"   cd {project_name}")
             print(f"   git init")
             print(f"   pip install -e .")
-            print(f"   devmind chat\n")
+            print(f"   yaver chat\n")
         
     except ImportError:
         # If AI dependencies not available, use templates
@@ -1714,7 +1714,7 @@ setup(
     # Create README.md
     (path / "README.md").write_text(f"""# {name}
 
-A Python project created with DevMind AI.
+A Python project created with Yaver AI.
 
 ## Installation
 
@@ -1801,7 +1801,7 @@ pydantic>=2.5.0
     # Create README
     (path / "README.md").write_text(f"""# {name}
 
-FastAPI application created with DevMind AI.
+FastAPI application created with Yaver AI.
 
 ## Installation
 
@@ -1853,7 +1853,7 @@ if __name__ == '__main__':
 """)
     
     (path / "requirements.txt").write_text("Flask>=3.0.0\n")
-    (path / "README.md").write_text(f"# {name}\n\nFlask app created with DevMind AI.\n\n## Run\n\n```bash\npython run.py\n```\n")
+    (path / "README.md").write_text(f"# {name}\n\nFlask app created with Yaver AI.\n\n## Run\n\n```bash\npython run.py\n```\n")
     (path / ".gitignore").write_text("__pycache__/\n*.pyc\nvenv/\n")
     
     print(f"   ✓ Created Flask project structure")
@@ -1891,7 +1891,7 @@ setup(
 )
 """)
     
-    (path / "README.md").write_text(f"# {name}\n\nCLI tool created with DevMind AI.\n")
+    (path / "README.md").write_text(f"# {name}\n\nCLI tool created with Yaver AI.\n")
     (path / ".gitignore").write_text("__pycache__/\n*.pyc\n")
     
     print(f"   ✓ Created CLI tool project structure")
@@ -1914,7 +1914,7 @@ jupyter>=1.0.0
     
     (path / "README.md").write_text(f"""# {name}
 
-ML project created with DevMind AI.
+ML project created with Yaver AI.
 
 ## Structure
 
@@ -1931,7 +1931,7 @@ ML project created with DevMind AI.
 
 def create_basic_project(path: Path, name: str):
     """Create a basic project"""
-    (path / "README.md").write_text(f"# {name}\n\nProject created with DevMind AI.\n")
+    (path / "README.md").write_text(f"# {name}\n\nProject created with Yaver AI.\n")
     (path / ".gitignore").write_text("__pycache__/\n*.pyc\n")
     
     print(f"   ✓ Created basic project structure")
@@ -1971,7 +1971,7 @@ def handle_project_list(args):
             
             if not projects:
                 console.print("[yellow]No projects found. Create one with:[/yellow]")
-                console.print("[dim]  devmind learn <path> --project-id=<name>[/dim]\n")
+                console.print("[dim]  yaver learn <path> --project-id=<name>[/dim]\n")
                 return
             
             table = Table(show_header=True, header_style="bold magenta")
@@ -1997,7 +1997,7 @@ def handle_project_list(args):
                 table.add_row(project_id, repos_str, last_used_str)
             
             console.print(table)
-            console.print(f"\n[dim]💡 Use 'devmind project show <project-id>' for details[/dim]\n")
+            console.print(f"\n[dim]💡 Use 'yaver project show <project-id>' for details[/dim]\n")
         
         adapter.close()
         
@@ -2282,23 +2282,51 @@ def handle_agent_analyze(args):
     try:
         from agents.code_quality_agent import CodeQualityAgent
         from tools.metrics import MetricsAnalyzer
+        from tools.code_analyzer.neo4j_adapter import Neo4jAdapter
+        from agents.agent_base import create_llm
         
         console.print(f"\n[bold cyan]🤖 AUTONOMOUS AGENT ANALYSIS[/bold cyan]")
         console.print(f"[dim]Project: {args.project_id}[/dim]\n")
         
-        # Find project path
-        project_root = Path(os.path.expanduser("~/.devmind/projects")) / args.project_id
+        # Find project path (using sessions storage)
+        project_root = Path(os.path.expanduser("~/.yaver/sessions")) / args.project_id
         if not project_root.exists():
-            console.print(f"[bold red]❌ Error:[/bold red] Project '{args.project_id}' not found")
-            console.print(f"[dim]   Try: devmind learn <repo> --project-id {args.project_id}[/dim]\n")
-            return
+            # Fallback to projects for backward compatibility or if using different structure
+            project_root_alt = Path(os.path.expanduser("~/.yaver/projects")) / args.project_id
+            if project_root_alt.exists():
+                project_root = project_root_alt
+            else:
+                console.print(f"[bold red]❌ Error:[/bold red] Project '{args.project_id}' not found in sessions")
+                console.print(f"[dim]   Try: yaver analyze <repo> --type deep --project-id {args.project_id}[/dim]\n")
+                return
         
         # Get original repo path from project metadata (if available)
         # For now, we'll use the project root itself
         repo_path = project_root
         
+        # Initialize dependencies
+        username = os.getenv("NEO4J_USER", "neo4j")
+        password = os.getenv("NEO4J_PASSWORD", "password")
+        neo4j_adapter = Neo4jAdapter(
+            uri=os.getenv("NEO4J_URI", "bolt://localhost:7687"),
+            auth=(username, password)
+        )
+        
+        class AgentWrapper:
+            def __init__(self):
+                # Import here to avoid circular dependencies if any
+                pass
+                
+            def query_llm(self, prompt, model_type="general"):
+                # Lazy load LLM to avoid overhead if not needed immediately
+                llm = create_llm(model_type)
+                response = llm.invoke(prompt)
+                return response.content
+
+        agent_base = AgentWrapper()
+        
         # Initialize agent
-        agent = CodeQualityAgent(args.project_id, repo_path)
+        agent = CodeQualityAgent(args.project_id, neo4j_adapter, agent_base)
         
         # Run analysis
         console.print(f"[dim]Observing changes and analyzing code...[/dim]")
@@ -2355,7 +2383,7 @@ def handle_agent_analyze(args):
             
             console.print(table)
         
-        console.print(f"\n[dim]💡 Use 'devmind agent feedback <id> --status approve' to approve recommendations[/dim]\n")
+        console.print(f"\n[dim]💡 Use 'yaver agent feedback <id> --status approve' to approve recommendations[/dim]\n")
         
     except ImportError as e:
         console.print(f"[bold red]❌ Agent not available:[/bold red] {e}\n")
@@ -2376,11 +2404,11 @@ def handle_agent_status(args):
     console = Console()
     
     try:
-        agent_state_path = Path(os.path.expanduser("~/.devmind/projects")) / args.project_id / "agent" / "state.json"
+        agent_state_path = Path(os.path.expanduser("~/.yaver/projects")) / args.project_id / "agent" / "state.json"
         
         if not agent_state_path.exists():
             console.print(f"\n[yellow]No agent state found for project '{args.project_id}'[/yellow]")
-            console.print(f"[dim]   Try: devmind agent analyze {args.project_id}[/dim]\n")
+            console.print(f"[dim]   Try: yaver agent analyze {args.project_id}[/dim]\n")
             return
         
         with open(agent_state_path) as f:
@@ -2420,7 +2448,7 @@ def handle_agent_history(args):
     console = Console()
     
     try:
-        agent_state_path = Path(os.path.expanduser("~/.devmind/projects")) / args.project_id / "agent" / "state.json"
+        agent_state_path = Path(os.path.expanduser("~/.yaver/projects")) / args.project_id / "agent" / "state.json"
         
         if not agent_state_path.exists():
             console.print(f"\n[yellow]No history found for project '{args.project_id}'[/yellow]\n")
@@ -2467,7 +2495,7 @@ def handle_agent_feedback(args):
     console = Console()
     
     try:
-        agent_state_path = Path(os.path.expanduser("~/.devmind/projects")) / args.project_id / "agent" / "state.json"
+        agent_state_path = Path(os.path.expanduser("~/.yaver/projects")) / args.project_id / "agent" / "state.json"
         
         if not agent_state_path.exists():
             console.print(f"\n[bold red]❌ Error:[/bold red] Project state not found\n")

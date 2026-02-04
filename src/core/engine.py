@@ -1,5 +1,5 @@
 """
-DevMind Agent Engine - Orchestration engine for task execution
+Yaver Agent Engine - Orchestration engine for task execution
 Core workflow engine that coordinates agents and components.
 Simplified version for current CLI usage.
 """
@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from agents.agent_base import create_llm
 
-logger = logging.getLogger("devmind.engine")
+logger = logging.getLogger("yaver.engine")
 
 @dataclass
 class AgentEvent:
@@ -21,7 +21,7 @@ class AgentEvent:
 
 class Engine:
     """
-    Main DevMind orchestration engine
+    Main Yaver orchestration engine
     Simplified implementation for CLI task execution
     """
     

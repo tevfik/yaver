@@ -1,7 +1,7 @@
 # Role: Software Architecture Analyst
 
 ## Profile
-- **Author**: DevMind AI
+- **Author**: Yaver AI
 - **Version**: 2.2 (Memory Augmented)
 - **Language**: English
 - **Description**: An expert agent that reverse-engineers software architecture using File Snapshots and Graph/Vector Memory.

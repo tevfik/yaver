@@ -2,7 +2,7 @@
 
 ## Overview
 
-Complete Docker service management system has been integrated into DevMind. This allows users to easily manage all required Docker services (Qdrant, Neo4j, Ollama, etc.) through simple CLI commands.
+Complete Docker service management system has been integrated into Yaver. This allows users to easily manage all required Docker services (Qdrant, Neo4j, Ollama, etc.) through simple CLI commands.
 
 ## What Was Added
 
@@ -36,12 +36,12 @@ Comprehensive Docker orchestration module with:
 Added `docker` command with subcommands:
 
 ```bash
-devmind docker start      # Start all services
-devmind docker stop       # Stop all services
-devmind docker status     # Check service status
-devmind docker logs       # View real-time logs
-devmind docker restart    # Restart all services
-devmind docker           # Show interactive menu (no subcommand)
+yaver docker start      # Start all services
+yaver docker stop       # Stop all services
+yaver docker status     # Check service status
+yaver docker logs       # View real-time logs
+yaver docker restart    # Restart all services
+yaver docker           # Show interactive menu (no subcommand)
 ```
 
 #### Implementation Details
@@ -90,7 +90,7 @@ Enhanced wizard to reference Docker:
 
 ### Start Services
 ```bash
-devmind docker start
+yaver docker start
 # Output:
 # ✅ All services started successfully
 # (Shows status of each service)
@@ -98,7 +98,7 @@ devmind docker start
 
 ### Check Status
 ```bash
-devmind docker status
+yaver docker status
 # Output:
 # 🐳 Docker Services Status
 # 📋 Docker Prerequisites:
@@ -117,20 +117,20 @@ devmind docker status
 
 ### View Logs
 ```bash
-devmind docker logs
+yaver docker logs
 # Shows real-time logs from all containers
 # Press Ctrl+C to stop
 ```
 
 ### Restart Services
 ```bash
-devmind docker restart
+yaver docker restart
 # Stops, waits 2 seconds, then starts all services
 ```
 
 ### Interactive Menu
 ```bash
-devmind docker
+yaver docker
 # Shows interactive menu:
 # 1. Start services
 # 2. Stop services
@@ -169,7 +169,7 @@ devmind docker
 - Data directory: `./docker/data/`
 - Logs directory: `./docker/logs/`
 
-### Environment Variables (from .devmind/.env)
+### Environment Variables (from .yaver/.env)
 ```bash
 OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=mistral
@@ -177,20 +177,20 @@ QDRANT_URL=http://localhost:6333
 QDRANT_MODE=local
 NEO4J_URI=neo4j://localhost:7687
 NEO4J_USER=neo4j
-NEO4J_PASSWORD=devmind123
-CHROMA_PERSIST_DIR=.devmind/chroma_db
+NEO4J_PASSWORD=yaver123
+CHROMA_PERSIST_DIR=.yaver/chroma_db
 ```
 
 ## Integration Points
 
 ### With Onboarding Wizard
-- Auto-runs on first `devmind` command (except setup/help)
-- Creates `.devmind/` directory with config
+- Auto-runs on first `yaver` command (except setup/help)
+- Creates `.yaver/` directory with config
 - Stores service URLs and credentials
 - References docker setup in summary
 
-### With DevMind Agents
-- Agents read config from `.devmind/config.json`
+### With Yaver Agents
+- Agents read config from `.yaver/config.json`
 - Connect to services using configured URLs
 - Health checks ensure services are ready
 - Fallback to local services if Docker unavailable
@@ -217,7 +217,7 @@ CHROMA_PERSIST_DIR=.devmind/chroma_db
 
 ```
 commit 0bdce6d (HEAD -> master)
-Author: DevMind Team
+Author: Yaver Team
 Date:   [timestamp]
 
     Feature: Docker service management with health checks and CLI integration
@@ -253,30 +253,30 @@ Date:   [timestamp]
 
 ### Docker not found
 ```bash
-$ devmind docker status
+$ yaver docker status
 ❌ Docker is not installed
 ```
 **Solution:** Install Docker from https://docs.docker.com/get-docker/
 
 ### Docker daemon not running
 ```bash
-$ devmind docker start
+$ yaver docker start
 ❌ Docker daemon is not running
 ```
 **Solution:** Start Docker daemon (varies by OS)
 
 ### Compose file not found
 ```bash
-$ devmind docker start
+$ yaver docker start
 ❌ docker-compose.yml not found
 ```
 **Solution:** Ensure compose file exists at `./docker/docker-compose.yml`
 
 ### Service won't start
 ```bash
-$ devmind docker start
+$ yaver docker start
 ⚠️ Some services failed to start
-Check: devmind docker logs
+Check: yaver docker logs
 ```
 **Solution:** Check logs, verify ports are available, check disk space
 
@@ -284,10 +284,10 @@ Check: devmind docker logs
 
 ```
 ┌─────────────────────────────────────────┐
-│         DevMind CLI (cli.py)            │
+│         Yaver CLI (cli.py)            │
 ├─────────────────────────────────────────┤
 │                                         │
-│  $ devmind docker [start|stop|status]   │
+│  $ yaver docker [start|stop|status]   │
 │                                         │
 └──────────────────┬──────────────────────┘
                    │
@@ -327,7 +327,7 @@ Check: devmind docker logs
 
 ---
 
-**Created:** DevMind Docker Management System  
+**Created:** Yaver Docker Management System  
 **Status:** ✅ Complete and Tested  
 **Version:** 1.0.0  
 **Last Updated:** Current session

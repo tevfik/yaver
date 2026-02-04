@@ -61,5 +61,4 @@ def test_incremental_analysis(mock_neo4j, mock_git_cls, setup_incremental_repo):
     # So call count should increment
     assert mock_neo4j.return_value.store_analysis.call_count == 2
     # Verify commit hash passed 
-    analyzer.neo4j_adapter.store_analysis.assert_called_with(mock_analysis, "incremental_repo", commit_hash="commit_1")
-
+    analyzer.neo4j_adapter.store_analysis.assert_called_with(mock_analysis, "incremental_repo", commit_hash="commit_1", session_id="test_session")

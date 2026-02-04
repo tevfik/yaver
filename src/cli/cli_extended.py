@@ -5,7 +5,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
-from devmind_cli.agent_base import create_llm
+from yaver_cli.agent_base import create_llm
 
 console = Console()
 
@@ -95,13 +95,13 @@ def handle_fix(command: list = None):
     """
     Analyzes error logs (from pipe or command execution) and suggests fixes.
     Usage: 
-      1. command 2>&1 | devmind fix
-      2. devmind fix -- command arg1 arg2
+      1. command 2>&1 | yaver fix
+      2. yaver fix -- command arg1 arg2
     """
     error_content = ""
     command_str = ""
 
-    # Mode 1: Wrapper Mode (devmind fix python script.py)
+    # Mode 1: Wrapper Mode (yaver fix python script.py)
     if command:
         command_str = " ".join(command)
         console.print(f"[bold blue]Running command:[/bold blue] {command_str}")
@@ -128,7 +128,7 @@ def handle_fix(command: list = None):
             console.print(f"[red]Execution failed: {e}[/red]")
             return
 
-    # Mode 2: Pipe Mode (command | devmind fix)
+    # Mode 2: Pipe Mode (command | yaver fix)
     elif not sys.stdin.isatty():
         # Read from pipe
         console.print("[bold blue]Reading log from stdin...[/bold blue]")
@@ -137,7 +137,7 @@ def handle_fix(command: list = None):
             console.print("[yellow]Empty input received.[/yellow]")
             return
     else:
-        console.print("[yellow]Usage: \n  1. Pipe logs: `make | devmind fix`\n  2. Wrap command: `devmind fix -- python script.py`[/yellow]")
+        console.print("[yellow]Usage: \n  1. Pipe logs: `make | yaver fix`\n  2. Wrap command: `yaver fix -- python script.py`[/yellow]")
         return
 
     # LLM Analysis

@@ -20,16 +20,16 @@ from bandit.core import manager as bandit_manager
 from bandit.core import config as bandit_config
 
 # Import local Parser for AST extraction
-from devmind_cli.tools.git_analysis import GraphIndexer, CodeParser
+from yaver_cli.tools.git_analysis import GraphIndexer, CodeParser
 
-from devmind_cli.agent_base import (
-    DevMindState, RepositoryInfo, FileAnalysis, ArchitectureAnalysis,
+from yaver_cli.agent_base import (
+    YaverState, RepositoryInfo, FileAnalysis, ArchitectureAnalysis,
     logger, print_section_header, print_success, print_error, print_warning,
     create_llm, format_log_entry
 )
-from devmind_cli.config import get_config
-from devmind_cli.agent_graph import GraphManager
-from devmind_cli.agent_memory import get_memory_manager, MemoryType
+from yaver_cli.config import get_config
+from yaver_cli.agent_graph import GraphManager
+from yaver_cli.agent_memory import get_memory_manager, MemoryType
 
 
 # ============================================================================
@@ -500,7 +500,7 @@ def analyze_architecture(repo_path: Path, file_analyses: List[FileAnalysis], cod
         )
 
 
-def git_analyzer_node(state: DevMindState) -> Dict:
+def git_analyzer_node(state: YaverState) -> Dict:
     """Main Git Analyzer Agent Node"""
     repo_path = state.get('repo_path')
     if not repo_path:

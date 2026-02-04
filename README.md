@@ -1,4 +1,4 @@
-# DevMind AI
+# Yaver AI
 
 AI-powered CLI development assistant built on Ollama. Provides intelligent code analysis, command suggestions, error fixes, and git repository analysis through a command-line interface.
 
@@ -8,7 +8,7 @@ AI-powered CLI development assistant built on Ollama. Provides intelligent code 
 - [Installation Guide](docs/INSTALLATION.md) - Detailed installation instructions
 - [CLI Reference](docs/CLI_REFERENCE.md) - Complete command reference
 - [Architecture](docs/MEMORY_ARCH.md) - System architecture and memory design
-- [Docker Integration](docs/DOCKER_INTEGRATION.md) - Using DevMind with Docker
+- [Docker Integration](docs/DOCKER_INTEGRATION.md) - Using Yaver with Docker
 - [Contributing](docs/CONTRIBUTING.md) - Guide for contributors
 - [Deep Analysis Guide](docs/DEEP_ANALYSIS_GUIDE.md) - Understanding the analysis engine
 
@@ -44,8 +44,8 @@ AI-powered CLI development assistant built on Ollama. Provides intelligent code 
 
 ```bash
 # Clone repository
-git clone https://github.com/tevfik/devmind.git
-cd devmind
+git clone https://github.com/tevfik/yaver.git
+cd yaver
 
 # Install via pipx (recommended)
 pipx install -e .
@@ -59,10 +59,10 @@ pip install -e .
 ### Configuration
 
 ```bash
-devmind setup
+yaver setup
 ```
 
-Creates `~/.devmind/config.json` with:
+Creates `~/.yaver/config.json` with:
 - `OLLAMA_URL`: Ollama endpoint (default: http://localhost:11434)
 - `OLLAMA_MODEL`: LLM model (default: nemotron-3-nano:30b)
 - Docker configuration (optional)
@@ -71,17 +71,17 @@ Creates `~/.devmind/config.json` with:
 
 | Command | Description |
 |---------|-------------|
-| `devmind setup` | Initial configuration |
-| `devmind chat` | Interactive chat |
-| `devmind commit` | Generate commit messages |
-| `devmind explain` | Explain commands and code |
-| `devmind suggest` | Command suggestions |
-| `devmind edit` | Code editing assistance |
-| `devmind solve` | Problem solving |
-| `devmind fix` | Error analysis and solutions |
-| `devmind analyze` | Repository analysis |
-| `devmind docker` | Docker command assistance |
-| `devmind status` | System status check |
+| `yaver setup` | Initial configuration |
+| `yaver chat` | Interactive chat |
+| `yaver commit` | Generate commit messages |
+| `yaver explain` | Explain commands and code |
+| `yaver suggest` | Command suggestions |
+| `yaver edit` | Code editing assistance |
+| `yaver solve` | Problem solving |
+| `yaver fix` | Error analysis and solutions |
+| `yaver analyze` | Repository analysis |
+| `yaver docker` | Docker command assistance |
+| `yaver status` | System status check |
 
 ## Testing
 
@@ -103,8 +103,8 @@ make test-all
 **Error**: `Connection refused` or LLM not responding
 
 1. Verify Ollama is running: `curl http://localhost:11434/api/tags`
-2. Run setup again: `devmind setup`
-3. Check config file: `cat ~/.devmind/config.json`
+2. Run setup again: `yaver setup`
+3. Check config file: `cat ~/.yaver/config.json`
 
 ### Permission Errors
 
@@ -127,8 +127,8 @@ newgrp docker
 
 ### Configuration Errors
 
-1. Run setup: `devmind setup`
-2. Validate JSON: `python3 -m json.tool ~/.devmind/config.json`
+1. Run setup: `yaver setup`
+2. Validate JSON: `python3 -m json.tool ~/.yaver/config.json`
 3. Check file permissions
 
 ### System Package Conflicts
@@ -168,4 +168,4 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ---
 
-For issues and discussions, please use the [GitHub repository](https://github.com/tevfik/devmind).
+For issues and discussions, please use the [GitHub repository](https://github.com/tevfik/yaver).

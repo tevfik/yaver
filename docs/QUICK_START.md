@@ -64,10 +64,16 @@ devmind chat
 ## Commands
 
 ```bash
+# Deep Learn Repository (Recommended first step)
+devmind analyze . --type deep --project-id my-project
+
+# Autonomous Agent (Get recommendations)
+devmind agent analyze my-project
+
 # Interactive chat
 devmind chat
 
-# Analyze repository
+# Lite Analysis (Overview)
 devmind analyze .
 
 # Generate commit message

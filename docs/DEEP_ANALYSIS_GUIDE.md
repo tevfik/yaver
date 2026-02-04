@@ -16,11 +16,8 @@ docker ps
 To enable deep features, you must first "teach" DevMind your code.
 
 ```bash
-# Analyze structure + semantics (slow, full scan)
-devmind analyze . --deep --semantic
-
-# Fast structural scan only
-devmind analyze . --deep
+# Deep Learning (AST + Graph + Embeddings)
+devmind analyze . --type deep --project-id my-project
 ```
 
 *Note: The first run takes time (generating embeddings). Subsequent runs use caching.*

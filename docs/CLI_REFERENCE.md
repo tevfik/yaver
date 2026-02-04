@@ -18,8 +18,11 @@ devmind chat --project-id=my-app
 # Create chat session
 devmind session new --name="Feature X"
 
-# Learn repo into project
-devmind learn ./backend --project-id=my-app
+# Learn repo into project (Deep Analysis)
+devmind analyze ./backend --type deep --project-id=my-app
+
+# Get autonomous code recommendations
+devmind agent analyze my-app
 ```
 
 ## Table of Contents
@@ -27,6 +30,7 @@ devmind learn ./backend --project-id=my-app
 - [Quick Start](#quick-start)
 - [Core Commands](#core-commands)
 - [Learning & Analysis](#learning--analysis)
+- [Autonomous Agent](#autonomous-agent)
 - [Session & Project Management](#session--project-management)
 - [Code Assistance](#code-assistance)
 - [Memory Operations](#memory-operations)
@@ -40,8 +44,11 @@ devmind learn ./backend --project-id=my-app
 ## Quick Start
 
 ```bash
-# Learn a repository
-devmind learn /path/to/repo
+# Learn a repository (Deep Analysis)
+devmind analyze /path/to/repo --type deep
+
+# Get autonomous recommendations
+devmind agent analyze myproject
 
 # Start interactive chat
 devmind chat
@@ -117,93 +124,150 @@ DevMind: [Uses project context + previous conversation history]
 
 ## Learning & Analysis
 
-### `devmind learn`
-Deep learn a repository with AST analysis, call graphs, and semantic embeddings.
-
-**Usage:**
-```bash
-devmind learn [PATH] [OPTIONS]
-```
-
-**Arguments:**
-- `PATH` - Repository path (default: current directory)
-
-**Options:**
-- `--project-id <ID>` - Custom project ID for multi-repo projects
-- `--incremental` - Only analyze changed files (faster)
-
-**Examples:**
-
-**Single Repository:**
-```bash
-devmind learn ~/projects/backend
-```
-
-**Multi-Repository Project:**
-```bash
-# Learn multiple repos under same project
-devmind learn ~/projects/backend --project-id=my-saas-app
-devmind learn ~/projects/frontend --project-id=my-saas-app
-devmind learn ~/projects/auth --project-id=my-saas-app
-
-# Now you can query across all three repos!
-```
-
-**Incremental Update:**
-```bash
-devmind learn . --incremental
-```
-
-**Output:**
-```
-🧠 Deep Learning Repository: backend
-
-Session ID: my-saas-app
-Neo4j: bolt://localhost:7687
-Qdrant: localhost:6333
-
-✅ Connected to Neo4j
-
-📊 Analyzing codebase...
-✅ Analysis complete (5.32s)
-
-✅ Repository Learning Complete!
-   Duration: 5.32s
-   Session: my-saas-app
-
-📈 Graph Statistics for backend:
-   • Function: 450
-   • Class: 65
-   • File: 78
-
-📦 Session 'my-saas-app' includes 3 repositories:
-   • backend
-   • frontend
-   • auth
-
-   Total across session:
-   • Function: 1245
-   • Class: 156
-   • File: 234
-```
-
----
-
 ### `devmind analyze`
-Analyze code quality, dependencies, and architecture.
+Unified command for repository analysis, from basic overview to deep learning.
 
 **Usage:**
 ```bash
 devmind analyze [PATH] [OPTIONS]
 ```
 
+**Arguments:**
+- `PATH` - Repository path (default: current directory)
+
 **Options:**
+- `--type <TYPE>` - Analysis type:
+  - `overview`: basic stats (default)
+  - `structure`: language & file breakdown
+  - `deep`: **Deep Learning** (AST, Neo4j, Embeddings)
+- `--project-id <ID>` - Project ID for deep analysis storage (use this to group repos)
+- `--incremental` - Only analyze changed files (works for deep mode)
 - `--target <FUNCTION/CLASS>` - Target for impact analysis
-- `--incremental` - Only analyze changed files
+
+**Examples:**
+
+**1. Basic Overview:**
+```bash
+$ devmind analyze .
+📊 Analyzing repository: .
+   Status: 🔴 Dirty
+   Commits: 50+
+   Modified Files: 3
+```
+
+**2. Deep Learning (Understand Codebase):**
+> **Note:** This replaces the old `devmind learn` command.
+```bash
+# Deep learn repo and store in database
+devmind analyze . --type deep --project-id my-project
+```
+
+**Mult-Repo Setup:**
+```bash
+# Learn multiple repos into one project context
+devmind analyze ./backend --type deep --project-id my-saas
+devmind analyze ./frontend --type deep --project-id my-saas
+```
+
+**INCREMENTAL ANALYSIS:**
+```bash
+# Only re-analyze changed files (much faster)
+devmind analyze . --type deep --incremental
+```
+
+---
+
+### `devmind learn` (DEPRECATED)
+⚠️ **Deprecated:** Please use `devmind analyze --type deep` instead.
+This command still works but redirects to the new analyze command.
+
+---
+
+## Autonomous Agent
+
+### `devmind agent`
+Your persistent autonomous AI developer assistant. The agent observes your code, analyzes quality, makes reasoned decisions, and learns from your feedback.
+
+**Usage:**
+```bash
+devmind agent [SUBCOMMAND] [OPTIONS]
+```
+
+### `devmind agent analyze`
+Run autonomous analysis on a project to generate smart recommendations.
+
+**Usage:**
+```bash
+devmind agent analyze <PROJECT_ID> [--format table|json|chat]
+```
+
+**Features:**
+- Detects **Dead Code** (unreachable functions)
+- Identifies **High Complexity** code needing refactoring
+- Finds **Circular Dependencies**
+- Prioritizes issues (1-10 scale) based on risk and effort
+- Estimates effort hours
 
 **Example:**
 ```bash
-devmind analyze src/services/auth.py --target=validate_token
+$ devmind agent analyze my-saas
+🤖 AUTONOMOUS AGENT ANALYSIS
+
+⚠️  Issues Found:
+[1] Remove dead code (Priority 9)
+    Effort: 5 min | Risk: LOW
+    
+[2] Refactor complexity (Priority 7)
+    Effort: 1-2 hrs | Risk: MEDIUM
+```
+
+---
+
+### `devmind agent status`
+View the agent's learning state and preferences for a project.
+
+**Usage:**
+```bash
+devmind agent status <PROJECT_ID>
+```
+
+**Output:**
+- Number of approved/rejected recommendations
+- Learned user preferences (contracts, styles)
+- Last analysis timestamp
+
+---
+
+### `devmind agent history`
+View decision history and code quality trends over time.
+
+**Usage:**
+```bash
+devmind agent history <PROJECT_ID> [--limit N]
+```
+
+**Output:**
+- Chronological list of decisions
+- Quality score trends
+- Tracking of improvements
+
+---
+
+### `devmind agent feedback`
+Teach the agent by providing feedback on its recommendations. The agent uses this to improve future suggestions.
+
+**Usage:**
+```bash
+devmind agent feedback <PROJECT_ID> <REC_ID> --status <STATUS> [--note "TEXT"]
+```
+
+**Options:**
+- `--status`: `approve`, `reject`, or `ignore`
+- `--note`: Optional explanation for the agent
+
+**Example:**
+```bash
+devmind agent feedback my-saas 1 --status approve --note "Good catch, removing this now"
 ```
 
 ---

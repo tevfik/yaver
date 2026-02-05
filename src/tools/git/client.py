@@ -94,6 +94,7 @@ class GitClient(Tool):
                 "status": "ok",
                 "changes": result.stdout,
                 "is_clean": result.returncode == 0 and not result.stdout,
+                "active_branch": self.get_branch(),
             }
         except Exception as e:
             return {"error": str(e)}

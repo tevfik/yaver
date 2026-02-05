@@ -134,10 +134,18 @@ class CodeAnalyzer:
     def init_rag(self):
         """Initialize RAG service"""
         self.init_semantic()
+
+        # Determine active vector store
+        vector_store = (
+            self.chroma_adapter
+            if self.memory_config.memory_type == "chroma"
+            else self.qdrant_adapter
+        )
+
         if not self.rag_service:
             self.rag_service = RAGService(
                 neo4j_adapter=self.neo4j_adapter,
-                qdrant_adapter=self.qdrant_adapter,
+                vector_store=vector_store,
                 code_embedder=self.code_embedder,
             )
 

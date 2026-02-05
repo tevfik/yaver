@@ -184,6 +184,55 @@ class LoggingConfig(BaseSettings):
         default=True, validation_alias="ENABLE_RICH_LOGGING"
     )
 
+
+class UIConfig(BaseSettings):
+    """UI configuration"""
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+    gradio_server_port: int = Field(default=7860, validation_alias="GRADIO_SERVER_PORT")
+    gradio_share: bool = Field(default=False, validation_alias="GRADIO_SHARE")
+    enable_gradio_queue: bool = Field(
+        default=True, validation_alias="ENABLE_GRADIO_QUEUE"
+    )
+
+
+class TaskConfig(BaseSettings):
+    """Task management configuration"""
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+    max_task_depth: int = Field(default=3, validation_alias="MAX_TASK_DEPTH")
+    auto_prioritize_tasks: bool = Field(
+        default=True, validation_alias="AUTO_PRIORITIZE_TASKS"
+    )
+    enable_parallel_execution: bool = Field(
+        default=False, validation_alias="ENABLE_PARALLEL_EXECUTION"
+    )
+
+
+class FeatureConfig(BaseSettings):
+    """Advanced features toggles"""
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+    enable_architecture_diagram: bool = Field(
+        default=True, validation_alias="ENABLE_ARCHITECTURE_DIAGRAM"
+    )
+    enable_documentation_gen: bool = Field(
+        default=True, validation_alias="ENABLE_DOCUMENTATION_GEN"
+    )
+    enable_test_generation: bool = Field(
+        default=False, validation_alias="ENABLE_TEST_GENERATION"
+    )
+    enable_refactoring_suggestions: bool = Field(
+        default=True, validation_alias="ENABLE_REFACTORING_SUGGESTIONS"
+    )
+
+
 class PromptsConfig(BaseSettings):
     """Configuration for Prompt files"""
 

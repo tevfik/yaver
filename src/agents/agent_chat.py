@@ -15,6 +15,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from tools.code_analyzer.analyzer import CodeAnalyzer
 from tools.rag.rag_service import RAGService
 from agents.agent_base import create_llm
+from utils.prompts import CLI_CHAT_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,10 @@ class ChatAgent:
         self.repo_path = Path(repo_path)
         self.analyzer: Optional[CodeAnalyzer] = None
         self.rag_service: Optional[RAGService] = None
-        self.history = []
+
+        # Initialize history with System Prompt
+        self.history = [SystemMessage(content=CLI_CHAT_SYSTEM_PROMPT)]
+
         self._llm = None
 
         self._initialize_resources()

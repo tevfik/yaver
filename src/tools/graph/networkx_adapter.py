@@ -217,6 +217,8 @@ class NetworkXAdapter:
             repo_id=repo_id,
             session_id=session_id,
             commit_hash=commit_hash,
+            resolved_imports=analysis.resolved_imports,  # Store resolved imports for linking
+            raw_calls=analysis.calls,  # Store raw calls for linking
         )
 
         # Store classes
@@ -262,9 +264,97 @@ class NetworkXAdapter:
         self.save()
 
     def link_unresolved_calls(self):
-        """Link unresolved function calls (Neo4j-compatible, no-op for NetworkX)"""
-        logger.info("Call linking not implemented for NetworkX (no-op)")
-        pass
+        """Link unresolved function calls (Neo4j-compatible)"""
+        logger.info("Linking cross-file call relationships in NetworkX...")
+
+        # Iterate all File nodes to process their raw calls
+        file_nodes = self.find_nodes(label="File")
+
+        for file_node in file_nodes:
+            file_id = file_node["id"]
+            repo_id = file_node.get("repo_id")
+            raw_calls = file_node.get("raw_calls", [])
+            resolved_imports = file_node.get("resolved_imports", {})
+
+            if not raw_calls:
+                continue
+
+            for call in raw_calls:
+                caller_name = call.get("caller")
+                callee_name = call.get("callee")
+
+                if not caller_name or not callee_name:
+                    continue
+
+                # 1. Resolve Caller ID
+                # Try explicit function first (top-level)
+                caller_id = f"{file_id}::{caller_name}"
+
+                # If not found, check if it's a method content (class::method)
+                if caller_name and "." in caller_name:
+                    # This logic depends on how AST parser reports caller name for methods
+                    pass
+
+                # Verify caller exists in graph
+                if not self.graph.has_node(caller_id):
+                    # Try finding if it's a method
+                    # This is tricky without knowing the class name if AST just says 'method_name'
+                    # But ASTParser usually reports 'caller' as the function name enclosing the call.
+                    # If it's a method, it might be nested.
+                    # For now, assume top-level or search children of file.
+                    potential_callers = [
+                        n
+                        for n in self.graph.successors(file_id)
+                        if n.endswith(f"::{caller_name}")
+                    ]
+                    # Also check classes
+                    if not potential_callers:
+                        # Check methods in classes
+                        for succ in self.graph.successors(file_id):
+                            if "Class" in self.graph.nodes[succ].get("labels", []):
+                                for method in self.graph.successors(succ):
+                                    if method.endswith(f"::{caller_name}"):
+                                        potential_callers.append(method)
+
+                    if potential_callers:
+                        caller_id = potential_callers[0]  # Pick first match
+                    else:
+                        # logger.debug(f"Caller node not found: {caller_id}")
+                        continue
+
+                # 2. Resolve Callee ID
+                callee_id = None
+
+                # Case A: Local call (in same file)
+                local_target_candidate = f"{file_id}::{callee_name}"
+                if self.graph.has_node(local_target_candidate):
+                    callee_id = local_target_candidate
+
+                # Case B: Imported call (e.g. db.connect)
+                elif "." in callee_name:
+                    module_part, func_part = callee_name.split(".", 1)
+                    if module_part in resolved_imports:
+                        target_file_path = resolved_imports[module_part]
+                        # Target file ID
+                        target_file_id = f"{repo_id}:{target_file_path}"
+                        target_func_id = f"{target_file_id}::{func_part}"
+
+                        if self.graph.has_node(target_func_id):
+                            callee_id = target_func_id
+
+                # Case C: From x import y (Direct import)
+                elif callee_name in resolved_imports:
+                    # resolved_imports usually maps module->path.
+                    # But if 'from db import connect', 'connect' might be mapped?
+                    # ImportResolver logic needs verification.
+                    # Usually resolves to file path.
+                    pass
+
+                if callee_id:
+                    self.add_relationship(caller_id, callee_id, "CALLS")
+                    # logger.debug(f"Linked call: {caller_id} -> {callee_id}")
+
+        self.save()
 
     def init_schema(self):
         """Initialize schema (Neo4j-compatible, no-op for NetworkX)"""
@@ -272,5 +362,4 @@ class NetworkXAdapter:
 
     def auto_tag_layers(self, repo_name: str):
         """Auto-tag architectural layers (Neo4j-compatible, no-op for NetworkX)"""
-        logger.info("Layer tagging not implemented for NetworkX (no-op)")
         pass

@@ -101,7 +101,7 @@ class VectorDBConfig(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
     chroma_persist_dir: str = Field(
-        default="./chroma_db", validation_alias="CHROMA_PERSIST_DIR"
+        default="~/.yaver/chroma_db", validation_alias="CHROMA_PERSIST_DIR"
     )
     embedding_batch_size: int = Field(
         default=100, validation_alias="EMBEDDING_BATCH_SIZE"
@@ -178,60 +178,11 @@ class LoggingConfig(BaseSettings):
     )
     log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
     log_file: str = Field(
-        default="yaver_cli/logs/yaver.log", validation_alias="LOG_FILE"
+        default="~/.yaver/logs/yaver.log", validation_alias="LOG_FILE"
     )
     enable_rich_logging: bool = Field(
         default=True, validation_alias="ENABLE_RICH_LOGGING"
     )
-
-
-class UIConfig(BaseSettings):
-    """UI configuration"""
-
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
-    )
-    gradio_server_port: int = Field(default=7860, validation_alias="GRADIO_SERVER_PORT")
-    gradio_share: bool = Field(default=False, validation_alias="GRADIO_SHARE")
-    enable_gradio_queue: bool = Field(
-        default=True, validation_alias="ENABLE_GRADIO_QUEUE"
-    )
-
-
-class TaskConfig(BaseSettings):
-    """Task management configuration"""
-
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
-    )
-    max_task_depth: int = Field(default=3, validation_alias="MAX_TASK_DEPTH")
-    auto_prioritize_tasks: bool = Field(
-        default=True, validation_alias="AUTO_PRIORITIZE_TASKS"
-    )
-    enable_parallel_execution: bool = Field(
-        default=False, validation_alias="ENABLE_PARALLEL_EXECUTION"
-    )
-
-
-class FeatureConfig(BaseSettings):
-    """Advanced features toggles"""
-
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
-    )
-    enable_architecture_diagram: bool = Field(
-        default=True, validation_alias="ENABLE_ARCHITECTURE_DIAGRAM"
-    )
-    enable_documentation_gen: bool = Field(
-        default=True, validation_alias="ENABLE_DOCUMENTATION_GEN"
-    )
-    enable_test_generation: bool = Field(
-        default=False, validation_alias="ENABLE_TEST_GENERATION"
-    )
-    enable_refactoring_suggestions: bool = Field(
-        default=True, validation_alias="ENABLE_REFACTORING_SUGGESTIONS"
-    )
-
 
 class PromptsConfig(BaseSettings):
     """Configuration for Prompt files"""
@@ -240,15 +191,15 @@ class PromptsConfig(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
     coder_system_prompt_path: str = Field(
-        default="yaver_cli/prompts/coder_system.md",
+        default="~/.yaver/prompts/coder_system.md",
         validation_alias="PROMPT_CODER_SYSTEM_PATH",
     )
     reviewer_system_prompt_path: str = Field(
-        default="yaver_cli/prompts/reviewer_system.md",
+        default="~/.yaver/prompts/reviewer_system.md",
         validation_alias="PROMPT_REVIEWER_SYSTEM_PATH",
     )
     planner_system_prompt_path: str = Field(
-        default="yaver_cli/prompts/planner_system.md",
+        default="~/.yaver/prompts/planner_system.md",
         validation_alias="PROMPT_PLANNER_SYSTEM_PATH",
     )
 

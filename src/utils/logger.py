@@ -60,7 +60,7 @@ class YaverLogger:
 
         # File handler with rotation
         if log_file:
-            log_path = Path(log_file)
+            log_path = Path(log_file).expanduser().resolve()
             log_path.parent.mkdir(parents=True, exist_ok=True)
 
             file_handler = RotatingFileHandler(

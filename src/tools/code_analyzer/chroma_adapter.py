@@ -44,10 +44,10 @@ class ChromaAdapter(VectorStoreInterface):
         """Establish connection to ChromaDB."""
         try:
             # Ensure directory exists
-            Path(self.persist_directory).mkdir(parents=True, exist_ok=True)
+            Path(self.persist_directory).expanduser().resolve().mkdir(parents=True, exist_ok=True)
 
             self.client = chromadb.PersistentClient(
-                path=self.persist_directory, settings=Settings(allow_reset=True)
+                path=str(Path(self.persist_directory).expanduser().resolve()), settings=Settings(allow_reset=True)
             )
 
             self.collection = self.client.get_or_create_collection(

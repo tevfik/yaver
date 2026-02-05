@@ -51,9 +51,11 @@ def analyze(
 
         table = create_table(["Metric", "Value"], "Repository Overview")
         is_dirty = not status.get("is_clean", True)
+        total_files = len(analyzer.list_files())
 
         table.add_row("Status", "🔴 Dirty" if is_dirty else "✅ Clean")
         table.add_row("Branch", status.get("active_branch", "Unknown"))
+        table.add_row("Files (Total)", str(total_files))
         table.add_row("Files (Changed)", str(len(status.get("changed_files", []))))
         table.add_row("Staged", str(len(status.get("staged_files", []))))
 

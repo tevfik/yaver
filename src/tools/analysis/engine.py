@@ -48,8 +48,12 @@ from pydantic import BaseModel, Field
 
 
 class AnalysisEngineSchema(BaseModel):
-    repo_source: str = Field(".", description="Path to repository (default: current dir)")
-    analysis_type: str = Field("overview", description="Type: 'overview', 'structure', 'graph_index'")
+    repo_source: str = Field(
+        ".", description="Path to repository (default: current dir)"
+    )
+    analysis_type: str = Field(
+        "overview", description="Type: 'overview', 'structure', 'graph_index'"
+    )
 
 
 class AnalysisEngine(Tool):
@@ -68,7 +72,9 @@ class AnalysisEngine(Tool):
         self.graph_indexer = GraphIndexer()
         self.impact_analyzer = ImpactAnalyzer()
 
-    def run(self, repo_source: str = ".", analysis_type: str = "overview", **kwargs) -> Any:
+    def run(
+        self, repo_source: str = ".", analysis_type: str = "overview", **kwargs
+    ) -> Any:
         # Wrapper to make it look like a Tool execution
         return self.analyze(repo_source, analysis_type, **kwargs)
 

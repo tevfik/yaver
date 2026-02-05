@@ -101,7 +101,7 @@ class VectorStoreFactory:
         if provider == "chroma":
             # ChromaAdapter expects full config or specific? Let's assume specific for now or handle inside.
 
-            # But ChromaAdapter usually uses config.vector_db.chroma_persist_dir 
+            # But ChromaAdapter usually uses config.vector_db.chroma_persist_dir
             # Let's check dependency. For now pass full config if it can handle it, or specific if needed.
             # config.vector_db has persist dir.
             return ChromaAdapter(config)

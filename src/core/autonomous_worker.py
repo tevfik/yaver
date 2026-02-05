@@ -8,6 +8,7 @@ from typing import List, Dict, Any, Optional
 
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
 try:
     from langchain.agents import create_tool_calling_agent, AgentExecutor
 except ImportError:
@@ -17,7 +18,10 @@ except ImportError:
         # If both fail, we might be on a very new version or very old one.
         # Check if we can find them in langgraph or elsewhere (future proofing)
         import logging
-        logging.getLogger(__name__).warning("Could not import standard agents, trying legacy/classic paths.")
+
+        logging.getLogger(__name__).warning(
+            "Could not import standard agents, trying legacy/classic paths."
+        )
         raise
 
 from langchain_core.messages import SystemMessage

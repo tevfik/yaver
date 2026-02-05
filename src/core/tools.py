@@ -31,9 +31,10 @@ class ToolRegistry:
         self.register(AnalysisEngine())
         try:
             from tools.forge.tool import ForgeTool
+
             self.register(ForgeTool())
         except ImportError:
-            pass # Config might not be ready
+            pass  # Config might not be ready
 
     def register(self, tool: Tool):
         """Register a helper."""

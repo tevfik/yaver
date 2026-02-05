@@ -69,19 +69,20 @@ class GitOps(Tool):
         """Pushes the branch to remote, injecting token if available for HTTPS."""
         if not self.repo:
             return False
-            
+
         try:
             # 1. Get raw remote URL
             origin = self.repo.remote(name="origin")
             remote_url = origin.url
-            
+
             # 2. Check for Token via CredentialManager
             auth_url = None
             try:
                 from tools.forge.credential_manager import CredentialManager
+
                 creds = CredentialManager()
                 host = creds.detect_host_from_url(remote_url)
-                
+
                 if host and remote_url.startswith("https://"):
                     config = creds.get_host_config(host)
                     if config and config.token:
@@ -103,7 +104,7 @@ class GitOps(Tool):
             else:
                 # Standard push (SSH or unauthenticated)
                 origin.push(branch_name)
-                
+
             logger.info(f"Pushed branch {branch_name} to origin")
             return True
         except Exception as e:

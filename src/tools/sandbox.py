@@ -10,12 +10,13 @@ import os
 import logging
 from typing import Tuple, Optional
 
-logger = logging.getLogger("yaver_cli")
+logger = logging.getLogger("agents")
 
 
 class Sandbox:
-    def __init__(self, timeout: int = 10):
+    def __init__(self, timeout: int = 10, cwd: Optional[str] = None):
         self.timeout = timeout
+        self.cwd = cwd
 
     def execute_code(self, code: str, run_args: list = None) -> Tuple[bool, str]:
         """
@@ -39,7 +40,11 @@ class Sandbox:
             logger.info(f"Sandbox: Executing {cmd}")
 
             result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=self.timeout
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=self.timeout,
+                cwd=self.cwd,  # Run in specific directory if set
             )
 
             output_log = (

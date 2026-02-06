@@ -16,8 +16,8 @@ from rich.prompt import Prompt, Confirm
 from rich.panel import Panel
 from rich.syntax import Syntax
 
-from yaver_cli.agent_base import create_llm, print_section_header
-from yaver_cli.config import get_config
+from agents.agent_base import create_llm, print_section_header
+from config.config import get_config
 from utils.prompts import CLI_CHAT_SYSTEM_PROMPT
 
 console = Console()

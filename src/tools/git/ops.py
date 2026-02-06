@@ -4,6 +4,7 @@ Handles branching, committing, and PR simulation for Yaver Agents.
 """
 import os
 import logging
+from typing import Any
 from git import Repo, Actor
 from datetime import datetime
 import requests
@@ -11,7 +12,7 @@ import re
 from config.config import get_config
 from tools.base import Tool
 
-logger = logging.getLogger("yaver_cli")
+logger = logging.getLogger("agents")
 
 
 class GitOps(Tool):

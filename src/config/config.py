@@ -6,8 +6,13 @@ Combines best practices from IntelligentAgent and CodingAgent projects
 import os
 from pathlib import Path
 from typing import Optional
+from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Load global .env from ~/.yaver/.env if it exists
+# This ensures os.getenv calls below picking up user config
+load_dotenv(Path.home() / ".yaver" / ".env")
 
 
 class OllamaConfig(BaseSettings):
@@ -23,6 +28,9 @@ class OllamaConfig(BaseSettings):
     )
     model_general: str = Field(
         default="llama3.2:3b-instruct-q4_K_M", validation_alias="OLLAMA_MODEL_GENERAL"
+    )
+    model_reasoning: str = Field(
+        default="deepseek-r1:1.5b", validation_alias="OLLAMA_MODEL_REASONING"
     )
     model_code: str = Field(
         default="qwen2.5-coder:7b-instruct-q4_K_M", validation_alias="OLLAMA_MODEL_CODE"
@@ -107,7 +115,7 @@ class VectorDBConfig(BaseSettings):
         default=100, validation_alias="EMBEDDING_BATCH_SIZE"
     )
     top_k_similar_files: int = Field(default=5, validation_alias="TOP_K_SIMILAR_FILES")
-    provider: str = Field(default="qdrant", validation_alias="VECTOR_DB_PROVIDER")
+    provider: str = Field(default="chroma", validation_alias="VECTOR_DB_PROVIDER")
 
 
 class QdrantConfig(BaseSettings):
@@ -205,6 +213,7 @@ class TaskConfig(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
     max_task_depth: int = Field(default=3, validation_alias="MAX_TASK_DEPTH")
+    max_iterations: int = Field(default=10, validation_alias="MAX_ITERATIONS")
     auto_prioritize_tasks: bool = Field(
         default=True, validation_alias="AUTO_PRIORITIZE_TASKS"
     )

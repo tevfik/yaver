@@ -154,7 +154,7 @@ class QdrantAdapter(VectorStoreInterface):
             query_vector: The query embedding
             limit: Max results
             score_threshold: Minimum similarity score
-            query_filter: Optional Qdrant Filter for filtering results (e.g., by session_id)
+            query_filter: Optional filter as dict or Qdrant Filter
 
         Returns:
             List of results with payload and score
@@ -163,6 +163,18 @@ class QdrantAdapter(VectorStoreInterface):
             raise RuntimeError("Qdrant client not connected")
 
         try:
+            # Translate dict filter to Qdrant Filter if needed
+            if isinstance(query_filter, dict):
+                must_conditions = []
+                for key, value in query_filter.items():
+                    must_conditions.append(
+                        models.FieldCondition(
+                            key=key,
+                            match=models.MatchValue(value=value),
+                        )
+                    )
+                query_filter = models.Filter(must=must_conditions)
+
             # Use query_points for newer Qdrant client API
             search_result = self.client.query_points(
                 collection_name=self.collection_name,
@@ -225,3 +237,49 @@ class QdrantAdapter(VectorStoreInterface):
                 return
             logger.error(f"Failed to delete points: {e}")
             raise
+
+    def get_recent(
+        self, limit: int = 5, filter: Optional[Dict] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get recently stored items using scroll.
+
+        Args:
+            limit: Max items to return
+            filter: Optional filter dictionary or Qdrant Filter
+
+        Returns:
+            List of items with payload and id
+        """
+        if not self.client:
+            raise RuntimeError("Qdrant client not connected")
+
+        try:
+            # Translate dict filter to Qdrant Filter if needed
+            if isinstance(filter, dict):
+                must_conditions = []
+                for key, value in filter.items():
+                    must_conditions.append(
+                        models.FieldCondition(
+                            key=key,
+                            match=models.MatchValue(value=value),
+                        )
+                    )
+                filter = models.Filter(must=must_conditions)
+
+            # Use scroll to get points without vector search
+            scroll_result = self.client.scroll(
+                collection_name=self.collection_name,
+                limit=limit,
+                scroll_filter=filter,
+                with_payload=True,
+                with_vectors=False,
+            )
+
+            results = []
+            for point in scroll_result[0]:
+                results.append({"id": point.id, "payload": point.payload})
+            return results
+        except Exception as e:
+            logger.error(f"Failed to get recent items from Qdrant: {e}")
+            return []

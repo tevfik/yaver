@@ -86,3 +86,9 @@ def create_table(columns: list[str], title: Optional[str] = None) -> Table:
     for col in columns:
         table.add_column(col)
     return table
+
+
+def print_section_header(title: str, emoji: str = "🔹"):
+    """Print formatted section header"""
+    console.print(f"\n{emoji} [bold cyan]{title}[/bold cyan]")
+    console.print("─" * 60)

@@ -1,10 +1,11 @@
 """
 Yaver AI - Command Line Interface (Typer)
+
 Entry point for the modern, modular CLI.
 """
 import typer
 from .ui import console, print_title
-from .commands import chat, code, system, agent, memory
+from .commands import chat, code, system, agent, memory, social, verify, solve
 
 app = typer.Typer(
     name="yaver",
@@ -19,6 +20,9 @@ app.add_typer(code.app, name="code")
 app.add_typer(system.app, name="system")
 app.add_typer(agent.app, name="agent")
 app.add_typer(memory.app, name="memory")
+app.add_typer(social.app, name="social")
+app.add_typer(verify.app, name="verify")
+app.add_typer(solve.app, name="solve")
 
 
 @app.callback(invoke_without_command=True)

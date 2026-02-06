@@ -23,8 +23,9 @@ from qdrant_client.models import (
 )
 from langchain_ollama import OllamaEmbeddings
 
-from yaver_cli.agent_base import logger, get_config
-from yaver_cli.agent_graph import GraphManager
+from agents.agent_base import logger, get_config
+from agents.agent_graph import GraphManager
+from tools.code_analyzer.vector_store import VectorStoreFactory
 
 
 class MemoryType(str, Enum):
@@ -68,26 +69,8 @@ class MemoryManager:
     def __init__(self):
         config = get_config()
 
-        # --- 1. Vector DB Setup (Qdrant) ---
-        if config.qdrant.use_local:
-            logger.info(
-                f"💾 Initializing Qdrant with local storage: {config.qdrant.path}"
-            )
-            os.makedirs(config.qdrant.path, exist_ok=True)
-            self.client = QdrantClient(path=config.qdrant.path)
-        elif config.qdrant.host:
-            logger.info(
-                f"🌐 Initializing Qdrant with server: {config.qdrant.host}:{config.qdrant.port}"
-            )
-            self.client = QdrantClient(
-                host=config.qdrant.host,
-                port=config.qdrant.port,
-            )
-        else:
-            logger.warning("⚠️ No Qdrant configuration found, using in-memory storage")
-            self.client = QdrantClient(location=":memory:")
-
-        self.collection_name = config.qdrant.collection
+        # --- 1. Vector DB Setup (Using Factory) ---
+        self.vector_store = VectorStoreFactory.get_instance(config)
 
         # Build embeddings with optional authentication
         embedding_kwargs = {
@@ -107,36 +90,10 @@ class MemoryManager:
         self.short_term_limit = config.memory.short_term_limit
         self.long_term_limit = config.memory.long_term_limit
 
-        self._initialize_collection()
-
         # --- 2. Graph DB Setup (Neo4j) ---
         self.graph = GraphManager()
 
-        logger.info(
-            f"Memory Manager initialized with collection: {self.collection_name}"
-        )
-
-    def _initialize_collection(self):
-        """Initialize or recreate Qdrant collection"""
-        try:
-            collections = self.client.get_collections().collections
-            collection_exists = any(c.name == self.collection_name for c in collections)
-
-            if not collection_exists:
-                self.client.create_collection(
-                    collection_name=self.collection_name,
-                    vectors_config=VectorParams(
-                        size=768,  # Verify this matches your embedding model
-                        distance=Distance.COSINE,
-                    ),
-                )
-                logger.info(f"Created Qdrant collection: {self.collection_name}")
-            else:
-                logger.info(f"Using existing collection: {self.collection_name}")
-
-        except Exception as e:
-            logger.error(f"Failed to initialize Qdrant collection: {e}")
-            # Do not raise, allow degradation to basic behavior if DB fails
+        logger.info("Memory Manager initialized via Factory")
 
     def add_memory(
         self,
@@ -166,15 +123,8 @@ class MemoryManager:
                 **entry.metadata,
             }
 
-            self.client.upsert(
-                collection_name=self.collection_name,
-                points=[
-                    PointStruct(
-                        id=entry.id,
-                        vector=entry.embedding,
-                        payload=payload,
-                    )
-                ],
+            self.vector_store.store_embeddings(
+                [{"id": entry.id, "embedding": entry.embedding, **payload}]
             )
 
             logger.info(f"Added {memory_type.value} memory: {entry.id}")
@@ -253,35 +203,26 @@ class MemoryManager:
 
             query_filter = None
             if memory_type:
-                query_filter = Filter(
-                    must=[
-                        FieldCondition(
-                            key="memory_type",
-                            match=MatchValue(value=memory_type.value),
-                        )
-                    ]
-                )
+                query_filter = {"memory_type": memory_type.value}
 
-            response = self.client.query_points(
-                collection_name=self.collection_name,
-                query=query_embedding,
+            results = self.vector_store.search(
+                query_vector=query_embedding,
                 limit=limit,
                 query_filter=query_filter,
                 score_threshold=score_threshold,
             )
-            results = response.points
 
             memories = []
             for point in results:
                 memories.append(
                     {
-                        "id": point.id,
-                        "content": point.payload.get("content"),
-                        "memory_type": point.payload.get("memory_type"),
-                        "score": point.score,
+                        "id": point["id"],
+                        "content": point["payload"].get("content"),
+                        "memory_type": point["payload"].get("memory_type"),
+                        "score": point["score"],
                         "metadata": {
                             k: v
-                            for k, v in point.payload.items()
+                            for k, v in point["payload"].items()
                             if k not in ["content", "memory_type", "timestamp"]
                         },
                     }
@@ -308,26 +249,16 @@ class MemoryManager:
         try:
             query_filter = None
             if memory_type:
-                query_filter = Filter(
-                    must=[
-                        FieldCondition(
-                            key="memory_type",
-                            match=MatchValue(value=memory_type.value),
-                        )
-                    ]
-                )
+                query_filter = {"memory_type": memory_type.value}
 
-            records, _ = self.client.scroll(
-                collection_name=self.collection_name,
+            records = self.vector_store.get_recent(
                 limit=limit,
-                with_vectors=False,
-                with_payload=True,
-                scroll_filter=query_filter,
+                filter=query_filter,
             )
 
             sorted_records = sorted(
                 records,
-                key=lambda r: r.payload.get("timestamp", ""),
+                key=lambda r: r["payload"].get("timestamp", ""),
                 reverse=True,
             )
 
@@ -335,13 +266,13 @@ class MemoryManager:
             for record in sorted_records[:limit]:
                 memories.append(
                     {
-                        "id": record.id,
-                        "content": record.payload.get("content"),
-                        "memory_type": record.payload.get("memory_type"),
-                        "timestamp": record.payload.get("timestamp"),
+                        "id": record["id"],
+                        "content": record["payload"].get("content"),
+                        "memory_type": record["payload"].get("memory_type"),
+                        "timestamp": record["payload"].get("timestamp"),
                         "metadata": {
                             k: v
-                            for k, v in record.payload.items()
+                            for k, v in record["payload"].items()
                             if k not in ["content", "memory_type", "timestamp"]
                         },
                     }
@@ -367,11 +298,8 @@ class MemoryManager:
 
                 if len(memories) > limit_val:
                     # Delete oldest ones (end of list)
-                    to_delete = [m["id"] for m in memories[limit_val:]]
-                    self.client.delete(
-                        collection_name=self.collection_name,
-                        points_selector=to_delete,
-                    )
+                    for memory in memories[limit_val:]:
+                        self.vector_store.delete_by_filter("id", memory["id"])
                     logger.info(
                         f"Deleted {len(to_delete)} old {memory_type.value} memories"
                     )
@@ -382,9 +310,8 @@ class MemoryManager:
     def clear_collection(self):
         """Clear all memories (use with caution!)"""
         try:
-            self.client.delete_collection(self.collection_name)
-            self._initialize_collection()
-            logger.warning(f"Cleared all memories in {self.collection_name}")
+            self.vector_store.delete_collection()
+            logger.warning("Cleared all memories")
         except Exception as e:
             logger.error(f"Failed to clear collection: {e}")
 

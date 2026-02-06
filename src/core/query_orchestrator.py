@@ -18,6 +18,9 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from agents.agent_memory import MemoryManager, MemoryType
+from tools.rag.fact_extractor import FactExtractor
+
 logger = logging.getLogger(__name__)
 
 
@@ -77,9 +80,14 @@ class QueryClassifier:
 
     STRUCTURAL_KEYWORDS = {
         "call",
+        "calls",
+        "caller",
+        "callee",
         "called",
         "depend",
+        "depends",
         "dependency",
+        "dependencies",
         "chain",
         "path",
         "impact",
@@ -88,10 +96,17 @@ class QueryClassifier:
         "break",
         "circular",
         "import",
+        "imports",
+        "imported",
         "usage",
+        "uses",
+        "used",
         "reference",
+        "references",
         "hierarchy",
         "relation",
+        "relationship",
+        "relationships",
     }
 
     TEMPORAL_KEYWORDS = {
@@ -164,6 +179,20 @@ class MemoryQueryOrchestrator:
         self.project_name = project_name
         self.classifier = QueryClassifier()
         self.query_history: List[Dict] = []
+        try:
+            self.memory_manager = MemoryManager()
+            logger.info("MemoryQueryOrchestrator: Connected to MemoryManager")
+        except Exception as e:
+            logger.error(
+                f"MemoryQueryOrchestrator: Failed to connect to MemoryManager: {e}"
+            )
+            self.memory_manager = None
+
+        try:
+            self.fact_extractor = FactExtractor()
+        except Exception as e:
+            logger.warning(f"Failed to initialize FactExtractor: {e}")
+            self.fact_extractor = None
 
     def execute_query(self, query: str, context: Optional[Dict] = None) -> FusedResult:
         """
@@ -218,46 +247,116 @@ class MemoryQueryOrchestrator:
     def _query_qdrant(
         self, query: str, context: Optional[Dict] = None
     ) -> Optional[QueryResult]:
-        """Query Qdrant for semantic search (stub - would connect to actual Qdrant)."""
-        logger.debug(f"Querying Qdrant: {query}")
+        """Query Qdrant for semantic search (Using MemoryManager)."""
+        if not self.memory_manager:
+            return None
 
-        # This is a stub - in production would call actual Qdrant client
-        # For now, return example structure
-        return QueryResult(
-            source="qdrant",
-            query_type=QueryType.SEMANTIC,
-            results=[
-                {
-                    "file": "auth/login.py",
-                    "line": 42,
-                    "snippet": "def authenticate(username, password):",
-                    "relevance_score": 0.92,
-                }
-            ],
-            confidence=0.92,
-            explanation="Found via semantic search in code memory",
-        )
+        logger.debug(f"Querying Vector Memory: {query}")
+
+        try:
+            results = self.memory_manager.search_memories(
+                query, memory_type=MemoryType.CODE_ELEMENT, limit=5
+            )
+
+            # Transform to QueryResult format
+            transformed = []
+            for r in results:
+                meta = r.get("metadata", {})
+                transformed.append(
+                    {
+                        "file": meta.get("file_path", "unknown"),
+                        "name": meta.get("symbol_name", "unknown"),
+                        "type": meta.get("symbol_type", "unknown"),
+                        "snippet": r.get("content", "")[:200],
+                        "relevance_score": r.get("score", 0.0),
+                    }
+                )
+
+            return QueryResult(
+                source="qdrant",
+                query_type=QueryType.SEMANTIC,
+                results=transformed,
+                confidence=transformed[0]["relevance_score"] if transformed else 0.0,
+                explanation=f"Found {len(transformed)} relevant code elements via semantic search.",
+            )
+        except Exception as e:
+            logger.error(f"Vector search failed: {e}")
+            return None
 
     def _query_neo4j(
         self, query: str, context: Optional[Dict] = None
     ) -> Optional[QueryResult]:
-        """Query Neo4j for structural analysis (stub)."""
-        logger.debug(f"Querying Neo4j: {query}")
+        """Query Graph for structural analysis (Using GraphManager)."""
+        if not self.memory_manager or not self.memory_manager.graph:
+            return None
 
-        # This is a stub - in production would call actual Neo4j driver
+        logger.debug(f"Querying Graph Memory: {query}")
+        graph_mgr = self.memory_manager.graph
+
+        found_nodes = []
+        relationships = []
+
+        # 1. Advanced: Try Fact Extraction first
+        if self.fact_extractor:
+            try:
+                triples = self.fact_extractor.extract_facts(query)
+                for triple in triples:
+                    # Search by subject
+                    subject_nodes = graph_mgr.find_nodes_by_name(triple.subject)
+                    found_nodes.extend(subject_nodes)
+
+                    # Search by object
+                    object_nodes = graph_mgr.find_nodes_by_name(triple.object)
+                    found_nodes.extend(object_nodes)
+
+                    # If we found subject, try to find relationships matching the predicate
+                    # This is a heuristic mapping
+                    rel_type = "CALLS" if "call" in triple.predicate.lower() else None
+                    if rel_type and subject_nodes:
+                        for sn in subject_nodes:
+                            rels = graph_mgr.find_relationships(
+                                from_node=sn["id"], rel_type=rel_type
+                            )
+                            relationships.extend(rels)
+            except Exception as e:
+                logger.warning(f"Fact extraction failed during query: {e}")
+
+        # 2. Fallback: Simple heuristic scan words in query if nothing found via facts
+        if not found_nodes:
+            words = query.replace("?", "").split()
+            potential_names = [w for w in words if len(w) > 3]
+
+            for name in potential_names:
+                nodes = graph_mgr.find_nodes_by_name(name)
+                for node in nodes:
+                    found_nodes.append(node)
+                    # If function, find callers
+                    if "Function" in node.get("labels", []):
+                        rels = graph_mgr.find_relationships(
+                            to_node=node["id"], rel_type="CALLS"
+                        )
+                        for rel in rels:
+                            relationships.append(
+                                {
+                                    "type": "called_by",
+                                    "source": rel["from"],
+                                    "target": rel["to"],
+                                    "details": rel,
+                                }
+                            )
+
+        if not found_nodes:
+            return None
+
+        # Dedup
+        unique_nodes = {n["id"]: n for n in found_nodes}.values()
+
         return QueryResult(
-            source="neo4j",
+            source="graph",
             query_type=QueryType.STRUCTURAL,
-            results=[
-                {
-                    "function": "process_login",
-                    "calls": ["validate_credentials", "create_session"],
-                    "callers": ["handle_request"],
-                    "complexity": 5,
-                }
-            ],
-            confidence=0.85,
-            explanation="Found via graph analysis of code structure",
+            results=[{"nodes": found_nodes, "relationships": relationships}],
+            confidence=0.85 if relationships else 0.5,
+            explanation=f"Found {len(found_nodes)} nodes and {len(relationships)} relationships in graph.",
         )
 
     def _query_sqlite(

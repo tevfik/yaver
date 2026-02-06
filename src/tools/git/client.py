@@ -216,3 +216,69 @@ class GitClient(Tool):
             return None
         except Exception:
             return None
+
+    @staticmethod
+    def clone(repo_url: str, target_path: str) -> bool:
+        """Clone a repository to a target path."""
+        try:
+            subprocess.run(
+                ["git", "clone", repo_url, target_path], check=True, capture_output=True
+            )
+            return True
+        except subprocess.CalledProcessError:
+            return False
+
+    def checkout_pr(self, pr_number: int, remote: str = "origin") -> bool:
+        """Fetch and checkout a PR by number (GitHub/Gitea style refs)."""
+        if not self.is_git_repo:
+            return False
+
+        try:
+            # 1. Fetch the PR ref to a local branch
+            branch_name = f"pr-{pr_number}"
+            # Standard GitHub/Gitea ref: refs/pull/ID/head
+            # We try fetching explicitly
+            ref_spec = f"refs/pull/{pr_number}/head"
+
+            fetch_cmd = ["git", "fetch", remote, f"{ref_spec}:{branch_name}"]
+            subprocess.run(fetch_cmd, cwd=self.repo_path, check=True)
+
+            # 2. Checkout the branch
+            subprocess.run(
+                ["git", "checkout", branch_name], cwd=self.repo_path, check=True
+            )
+            return True
+        except Exception as e:
+            # Fallback: maybe it's GitLab? refs/merge-requests/ID/head
+            try:
+                ref_spec = f"refs/merge-requests/{pr_number}/head"
+                fetch_cmd = ["git", "fetch", remote, f"{ref_spec}:{branch_name}"]
+                subprocess.run(fetch_cmd, cwd=self.repo_path, check=True)
+                subprocess.run(
+                    ["git", "checkout", branch_name], cwd=self.repo_path, check=True
+                )
+                return True
+            except:
+                # Try to just checkout if it already exists locally
+                try:
+                    subprocess.run(
+                        ["git", "checkout", f"pr-{pr_number}"],
+                        cwd=self.repo_path,
+                        check=True,
+                    )
+                    return True
+                except:
+                    return False
+
+    def get_diff(self, target: str = "HEAD") -> str:
+        """Get diff of current changes or compare with target."""
+        try:
+            res = subprocess.run(
+                ["git", "diff", target],
+                cwd=self.repo_path,
+                capture_output=True,
+                text=True,
+            )
+            return res.stdout
+        except:
+            return ""

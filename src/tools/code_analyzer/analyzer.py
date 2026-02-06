@@ -22,7 +22,6 @@ from .qdrant_adapter import QdrantAdapter
 
 from .chroma_adapter import ChromaAdapter
 from tools.git.client import GitClient
-from tools.rag.rag_service import RAGService
 from tools.rag.fact_extractor import FactExtractor
 from core.analysis_session import AnalysisSession
 import config.config as cfg
@@ -57,9 +56,6 @@ class CodeAnalyzer:
         self.qdrant_adapter = None
         self.chroma_adapter = None
         self.chunker = None
-
-        # RAG Component
-        self.rag_service = None
 
         # Graph Database (NetworkX or Neo4j)
         self.graph_adapter = None
@@ -131,24 +127,6 @@ class CodeAnalyzer:
         if not self.chunker:
             self.chunker = CodeChunker()
 
-    def init_rag(self):
-        """Initialize RAG service"""
-        self.init_semantic()
-
-        # Determine active vector store
-        vector_store = (
-            self.chroma_adapter
-            if self.memory_config.memory_type == "chroma"
-            else self.qdrant_adapter
-        )
-
-        if not self.rag_service:
-            self.rag_service = RAGService(
-                neo4j_adapter=self.neo4j_adapter,
-                vector_store=vector_store,
-                code_embedder=self.code_embedder,
-            )
-
     def find_similar_code(
         self, source_code: str, limit: int = 5, threshold: float = 0.7
     ) -> List[Dict]:
@@ -188,6 +166,31 @@ class CodeAnalyzer:
         """Close database connection"""
         if self.neo4j_adapter:
             self.neo4j_adapter.close()
+
+    def analyze_structure(self) -> Dict:
+        """Get high-level repository structure overview"""
+        files = list(self._find_files())
+        total_files = len(files)
+        total_lines = 0
+        languages = {}
+
+        for p in files:
+            ext = p.suffix.lower() or "text"
+            languages[ext] = languages.get(ext, 0) + 1
+            try:
+                # Use faster line counting for large repos
+                with open(p, "rb") as f:
+                    total_lines += sum(1 for _ in f)
+            except Exception:
+                pass
+
+        return {
+            "total_files": total_files,
+            "total_lines": total_lines,
+            "languages": list(languages.keys()),
+            "repo_path": str(self.repo_path),
+            "repo_name": self.repo_path.name,
+        }
 
     def analyze_repository(self, incremental: bool = False, use_semantic: bool = False):
         """

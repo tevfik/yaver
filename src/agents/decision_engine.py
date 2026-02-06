@@ -95,7 +95,7 @@ class DecisionEngine:
         """
 
         try:
-            response = self.agent.query_llm(prompt, model_type="general")
+            response = self.agent.query_llm(prompt, model_type="reasoning")
 
             # Parse JSON responses
             import re
@@ -159,7 +159,7 @@ class DecisionEngine:
         """
 
         try:
-            response = self.agent.query_llm(prompt, model_type="code")
+            response = self.agent.query_llm(prompt, model_type="reasoning")
 
             import re
 

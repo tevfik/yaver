@@ -15,7 +15,29 @@ class YaverSetupWizard:
         self.config_dir = Path.home() / ".yaver"
         self.env_file = self.config_dir / ".env"
         self.config_file = self.config_dir / "config.json"
+
+        # Load existing config for defaults
+        self.existing_config = self._load_existing_env()
+
         self.config_dir.mkdir(exist_ok=True)
+
+    def _load_existing_env(self) -> Dict[str, str]:
+        """Load existing environment variables from .env file"""
+        config = {}
+        if self.env_file.exists():
+            try:
+                from dotenv import dotenv_values
+
+                config = dotenv_values(self.env_file)
+            except ImportError:
+                # Fallback manual parsing if dotenv not installed
+                with open(self.env_file, "r") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            key, val = line.split("=", 1)
+                            config[key] = val
+        return config
 
     def print_header(self):
         """Print welcome header"""
@@ -30,7 +52,11 @@ class YaverSetupWizard:
         print("-" * 50)
 
     def input_with_default(self, prompt: str, default: Optional[str] = None) -> str:
-        """Get user input with optional default value"""
+        """
+        Get user input with optional default value.
+        Prioritizes existing loaded config value if a known key is passed as context,
+        or simply falls back to provided default.
+        """
         if default:
             display_prompt = f"{prompt} [{default}]: "
         else:
@@ -38,6 +64,16 @@ class YaverSetupWizard:
 
         user_input = input(display_prompt).strip()
         return user_input if user_input else (default or "")
+
+    def input_with_config_default(
+        self, config_key: str, prompt: str, fallback_default: str = ""
+    ) -> str:
+        """
+        Helper to get input using the existing config value as the default.
+        Usage: value = self.input_with_config_default("OLLAMA_BASE_URL", "Ollama URL", "http://localhost:11434")
+        """
+        current_val = self.existing_config.get(config_key, fallback_default)
+        return self.input_with_default(prompt, current_val)
 
     def validate_url(self, url: str) -> bool:
         """Basic URL validation"""
@@ -83,15 +119,22 @@ class YaverSetupWizard:
         print("Make sure Ollama is running: ollama serve\n")
 
         while True:
-            url = self.input_with_default("Ollama server URL", "http://localhost:11434")
+            url = self.input_with_config_default(
+                "OLLAMA_BASE_URL", "Ollama server URL", "http://localhost:11434"
+            )
             if self.validate_url(url):
                 break
             print("❌ Please provide a valid URL (http://... or https://...)\n")
 
         # Ask about authentication (optional)
         print("\n🔐 Does your Ollama server require authentication?")
+        has_auth_configured = bool(self.existing_config.get("OLLAMA_USERNAME"))
+        default_choice = "y" if has_auth_configured else "n"
+
         use_auth = (
-            self.input_with_default("Use basic authentication? (y/n)", "n").lower()
+            self.input_with_default(
+                "Use basic authentication? (y/n)", default_choice
+            ).lower()
             == "y"
         )
 
@@ -99,10 +142,23 @@ class YaverSetupWizard:
         auth = None
 
         if use_auth:
-            username = self.input_with_default("Ollama username", "")
-            password = self.input_with_default(
-                "Ollama password (will be saved in .env)", ""
+            username = self.input_with_config_default(
+                "OLLAMA_USERNAME", "Ollama username", ""
             )
+
+            # Don't show password in default, just indicator
+            pass_default_msg = (
+                "***" if self.existing_config.get("OLLAMA_PASSWORD") else ""
+            )
+            display_prompt = f"Ollama password (will be saved in .env) [{'***' if pass_default_msg else ''}]: "
+            password_input = input(display_prompt).strip()
+
+            # If user pressed enter and we have existing password, keep it
+            if not password_input and pass_default_msg:
+                password = self.existing_config.get("OLLAMA_PASSWORD")
+            else:
+                password = password_input
+
             if username and password:
                 config["OLLAMA_USERNAME"] = username
                 config["OLLAMA_PASSWORD"] = password
@@ -116,6 +172,19 @@ class YaverSetupWizard:
         if models:
             print(f"\n✅ Found {len(models)} available models\n")
 
+            # Pre-calculate defaults based on existing config
+            default_roles = []
+            if self.existing_config.get("OLLAMA_MODEL_GENERAL"):
+                default_roles.append("1")
+            if self.existing_config.get("OLLAMA_MODEL_CODE"):
+                default_roles.append("2")
+            if self.existing_config.get("OLLAMA_MODEL_TOOL"):
+                default_roles.append("3")
+            if self.existing_config.get("OLLAMA_MODEL_EMBEDDING"):
+                default_roles.append("4")
+
+            default_roles_str = ",".join(default_roles) if default_roles else "1"
+
             # Ask which model roles to configure
             print("📋 Model Roles Available:")
             print("  1. General Purpose (chat, reasoning, default)")
@@ -124,7 +193,8 @@ class YaverSetupWizard:
             print("  4. Embedding (RAG, semantic search)\n")
 
             roles_input = self.input_with_default(
-                "Select roles to configure (comma-separated, e.g., 1,2,4)", "1"
+                "Select roles to configure (comma-separated, e.g., 1,2,4)",
+                default_roles_str,
             )
 
             role_map = {
@@ -150,16 +220,54 @@ class YaverSetupWizard:
                 role_num = role_num.strip()
                 if role_num in role_map:
                     config_key, role_name, description = role_map[role_num]
-                    model = self.select_model_role(models, role_name, description)
-                    config[config_key] = model
+
+                    # Try to find current model in the list to make it default
+                    current_model = self.existing_config.get(config_key)
+                    prompt_default = "1"
+                    if current_model and current_model in models:
+                        prompt_default = str(models.index(current_model) + 1)
+
+                    # We pass custom logic for default selection inside the function?
+                    # No, select_model_role takes a hardcoded default. Let's patch it.
+                    # Or simpler: just let user re-select.
+
+                    # Actually, let's just make select_model_role smart enough or pass the existing value
+                    # Since existing signature is strictly list based, let's wrap logic here.
+
+                    print(f"\n{description}")
+                    print(f"Available models for {role_name}:")
+                    for i, m in enumerate(models, 1):
+                        marker = " (*)" if m == current_model else ""
+                        print(f"  {i}. {m}{marker}")
+
+                    choice = self.input_with_default(
+                        f"Select model number for {role_name}", prompt_default
+                    )
+                    try:
+                        idx = int(choice) - 1
+                        if 0 <= idx < len(models):
+                            config[config_key] = models[idx]
+                        else:
+                            print(
+                                f"❌ Invalid selection, keeping previous: {current_model}"
+                            )
+                            if current_model:
+                                config[config_key] = current_model
+                            else:
+                                config[config_key] = models[0]
+                    except ValueError:
+                        config[config_key] = choice  # Raw string
 
             # Default: if no roles selected, use first model for general purpose
             if "OLLAMA_MODEL_GENERAL" not in config:
-                config["OLLAMA_MODEL_GENERAL"] = models[0]
+                config["OLLAMA_MODEL_GENERAL"] = (
+                    self.existing_config.get("OLLAMA_MODEL_GENERAL") or models[0]
+                )
         else:
             print("\n⚠️  Could not fetch models from Ollama server.")
             print("   Make sure Ollama is running at the URL you provided.\n")
-            model = self.input_with_default(
+            model = self.input_with_config_default(
+                "OLLAMA_MODEL_GENERAL",
                 "Enter model name manually (mistral, llama2, neural-chat, etc)",
                 "mistral",
             )
@@ -177,7 +285,11 @@ class YaverSetupWizard:
         )
         print("  2. ChromaDB: Standard local vector database\n")
 
-        choice = self.input_with_default("Choice (1-2)", "1")
+        current_provider = self.existing_config.get("VECTOR_DB_PROVIDER", "qdrant")
+        print(f"(Current: {current_provider})")
+
+        default_choice = "2" if current_provider == "chroma" else "1"
+        choice = self.input_with_default("Choice (1-2)", default_choice)
         config = {}
 
         if choice == "1":
@@ -190,14 +302,19 @@ class YaverSetupWizard:
             print("  1. Local (default): Uses local Qdrant server in Docker")
             print("  2. Cloud: Uses Qdrant Cloud service\n")
 
-            q_choice = self.input_with_default("Choice (1 or 2)", "1")
+            current_mode = self.existing_config.get("QDRANT_MODE", "local")
+            mode_default = "2" if current_mode == "cloud" else "1"
+            q_choice = self.input_with_default("Choice (1 or 2)", mode_default)
 
             if q_choice == "2":
-                url = self.input_with_default(
+                url = self.input_with_config_default(
+                    "QDRANT_URL",
                     "Qdrant Cloud URL",
                     "https://xxx-x-y-z-xxxxx.eu-central1-0.qdb.cloud",
                 )
-                api_key = self.input_with_default("Qdrant API Key (keep it secret!)")
+                api_key = self.input_with_config_default(
+                    "QDRANT_API_KEY", "Qdrant API Key (keep it secret!)", ""
+                )
                 config.update(
                     {
                         "QDRANT_URL": url,
@@ -206,8 +323,8 @@ class YaverSetupWizard:
                     }
                 )
             else:
-                url = self.input_with_default(
-                    "Qdrant local server URL", "http://localhost:6333"
+                url = self.input_with_config_default(
+                    "QDRANT_URL", "Qdrant local server URL", "http://localhost:6333"
                 )
                 config.update({"QDRANT_URL": url, "QDRANT_MODE": "local"})
 
@@ -216,8 +333,8 @@ class YaverSetupWizard:
             config["VECTOR_DB_PROVIDER"] = "chroma"
             config["MEMORY_TYPE"] = "chroma"
 
-            persist_dir = self.input_with_default(
-                "Persistence directory", "~/.yaver/chroma_db"
+            persist_dir = self.input_with_config_default(
+                "CHROMA_PERSIST_DIR", "Persistence directory", "~/.yaver/chroma_db"
             )
             config["CHROMA_PERSIST_DIR"] = persist_dir
 
@@ -234,12 +351,21 @@ class YaverSetupWizard:
         print("  2. Neo4j (Docker): More powerful, requires Docker container")
         print("  3. Neo4j (Remote): Connect to remote Neo4j server\n")
 
-        choice = self.input_with_default("Choice (1, 2, or 3)", "1")
+        current_provider = self.existing_config.get("GRAPH_DB_PROVIDER", "networkx")
+        default_choice = "1"
+        if current_provider == "neo4j":
+            # Guess check URI to distinguish 2 vs 3
+            if "localhost" in self.existing_config.get("NEO4J_URI", ""):
+                default_choice = "2"
+            else:
+                default_choice = "3"
+
+        choice = self.input_with_default("Choice (1, 2, or 3)", default_choice)
 
         if choice == "1":
             print("\n✅ Selected NetworkX (local)")
-            persist_path = self.input_with_default(
-                "Graph persistence path", "~/.yaver/graph.pkl"
+            persist_path = self.input_with_config_default(
+                "NETWORKX_PERSIST_PATH", "Graph persistence path", "~/.yaver/graph.pkl"
             )
             return {
                 "GRAPH_DB_PROVIDER": "networkx",
@@ -255,9 +381,23 @@ class YaverSetupWizard:
             }
         elif choice == "3":
             print("\n✅ Selected Neo4j (Remote)")
-            url = self.input_with_default("Neo4j URL", "bolt://localhost:7687")
-            user = self.input_with_default("Username", "neo4j")
-            password = self.input_with_default("Password (will not display)")
+            url = self.input_with_config_default(
+                "NEO4J_URI", "Neo4j URL", "bolt://localhost:7687"
+            )
+            user = self.input_with_config_default("NEO4J_USER", "Username", "neo4j")
+
+            pass_default_msg = (
+                "***" if self.existing_config.get("NEO4J_PASSWORD") else ""
+            )
+            display_prompt = (
+                f"Password (will not display) [{'***' if pass_default_msg else ''}]: "
+            )
+            password_input = input(display_prompt).strip()
+            if not password_input and pass_default_msg:
+                password = self.existing_config.get("NEO4J_PASSWORD")
+            else:
+                password = password_input
+
             return {
                 "GRAPH_DB_PROVIDER": "neo4j",
                 "NEO4J_URI": url,
@@ -373,17 +513,49 @@ class YaverSetupWizard:
                 print(
                     "⚠️  Could not import CredentialManager. Skipping advanced setup."
                 )
-                # Fallback to simple env var setup if import fails
-                provider = self.input_with_default(
-                    "Fallback: Default Provider (gitea/github/none)", "none"
-                ).lower()
-                if provider in ["gitea", "github"]:
-                    config["FORGE_PROVIDER"] = provider
-                    config["FORGE_TOKEN"] = self.input_with_default(
-                        f"{provider.title()} Token"
-                    )
-                    if provider == "gitea":
-                        config["FORGE_URL"] = self.input_with_default("Gitea URL")
+
+        # Also Configure Fallback Env Vars (User requested clarity here)
+        print("\n--- Fallback/Single Repo Configuration ---")
+        print("Useful if you want to force specific repo context via ENV variables.")
+
+        current_provider = self.existing_config.get("FORGE_PROVIDER", "none")
+        provider = self.input_with_default(
+            "Fallback Provider (gitea/github/none)", current_provider
+        ).lower()
+
+        if provider in ["gitea", "github"]:
+            config["FORGE_PROVIDER"] = provider
+
+            # Token
+            current_token = self.existing_config.get("FORGE_TOKEN", "")
+            token_display = (
+                f"{provider.title()} Token [{'***' if current_token else ''}]: "
+            )
+            token_input = input(token_display).strip()
+            config["FORGE_TOKEN"] = token_input if token_input else current_token
+
+            if provider == "gitea":
+                config["FORGE_URL"] = self.input_with_config_default(
+                    "FORGE_URL", "Gitea URL"
+                )
+
+            # Owner/Repo explanation
+            print("\nℹ️  FORGE_OWNER and FORGE_REPO are optional defaults.")
+            print(
+                "   If set, Yaver will default to this repo when no specific repo is provided."
+            )
+            print(
+                "   However, Yaver can still work across multiple repos if configured correctly in hosts.json"
+            )
+
+            config["FORGE_OWNER"] = self.input_with_config_default(
+                "FORGE_OWNER", "Default Repo Owner"
+            )
+            config["FORGE_REPO"] = self.input_with_config_default(
+                "FORGE_REPO", "Default Repo Name"
+            )
+
+        return config
 
         return config
 

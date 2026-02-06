@@ -5,7 +5,7 @@ from langchain_core.output_parsers import StrOutputParser
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
-from yaver_cli.agent_base import create_llm
+from agents.agent_base import create_llm
 from utils.prompts import (
     SHELL_EXPLAINER_PROMPT,
     COMMIT_MESSAGE_PROMPT,

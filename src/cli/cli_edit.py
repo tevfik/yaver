@@ -8,8 +8,8 @@ from rich.prompt import Confirm
 from rich.panel import Panel
 from pathlib import Path
 
-from yaver_cli.agent_coder import CoderAgent
-from yaver_cli.agent_base import setup_logger
+from agents.agent_coder import CoderAgent
+from agents.agent_base import setup_logger
 
 console = Console()
 

@@ -134,6 +134,67 @@ def _run_deep_analysis(path: str, incremental: bool, project_id: str):
 
 
 @app.command()
+def architect(
+    path: str = typer.Argument(
+        ".", help="Path to repository", autocompletion=complete_path
+    ),
+    output: str = typer.Option("report.md", "--output", "-o", help="Output filename"),
+):
+    """Generate a detailed architecture report."""
+    print_title(f"Architecting: {path}", f"Output: {output}")
+
+    from tools.code_analyzer.analyzer import CodeAnalyzer
+    from agents.agent_git_analyzer import git_analyzer_node
+    from agents.agent_base import YaverState
+
+    repo_path = Path(path).resolve()
+
+    try:
+        with console.status("[bold green]Analyzing repository...[/bold green]"):
+            analyzer = CodeAnalyzer(session_id="cli_architect", repo_path=repo_path)
+            # Perform deep analysis if not already done (simplified for CLI)
+            analyzer.analyze_repository(incremental=True, use_semantic=False)
+            repo_info = analyzer.analyze_structure()
+
+            state = YaverState(
+                repo_path=str(repo_path),
+                repo_info=repo_info,
+                user_request="Generate a detailed architecture report.",
+            )
+
+            # Run the specialized Git Analyzer Agent
+            results = git_analyzer_node(state)
+
+            arch_analysis = results.get("architecture_analysis")
+            if arch_analysis and arch_analysis.documentation:
+                report_content = arch_analysis.documentation
+
+                # Prepend some metadata
+                full_report = f"# Architecture Report: {repo_path.name}\n\n"
+                full_report += (
+                    f"- **Generated**: {time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+                )
+                full_report += (
+                    f"- **Files Analyzed**: {len(results.get('file_analyses', []))}\n"
+                )
+                full_report += f"- **Quality Score**: {results.get('code_quality_score', 'N/A')}\n\n"
+                full_report += report_content
+
+                with open(output, "w", encoding="utf-8") as f:
+                    f.write(full_report)
+
+                print_success(f"Report generated successfully: {output}")
+            else:
+                print_error("Failed to generate architecture documentation.")
+
+    except Exception as e:
+        print_error(f"Architecture analysis failed: {e}")
+        import traceback
+
+        console.print(f"[dim]{traceback.format_exc()}[/dim]")
+
+
+@app.command()
 def query(
     q: str = typer.Argument(..., help="Query string"),
     limit: int = typer.Option(5, "--limit", "-l", help="Max results"),

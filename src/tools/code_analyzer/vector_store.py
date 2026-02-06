@@ -60,6 +60,22 @@ class VectorStoreInterface(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
+    def get_recent(
+        self, limit: int = 5, filter: Optional[Dict] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get recently stored items.
+
+        Args:
+            limit: Max items to return
+            filter: Optional filter dictionary
+
+        Returns:
+            List of items with payload and id
+        """
+        pass
+
 
 class VectorStoreFactory:
     """
@@ -99,12 +115,10 @@ class VectorStoreFactory:
                 provider = config.vector_db.provider
 
         if provider == "chroma":
-            # ChromaAdapter expects full config or specific? Let's assume specific for now or handle inside.
-
-            # But ChromaAdapter usually uses config.vector_db.chroma_persist_dir
-            # Let's check dependency. For now pass full config if it can handle it, or specific if needed.
-            # config.vector_db has persist dir.
-            return ChromaAdapter(config)
+            chroma_config = config
+            if hasattr(config, "vector_db"):
+                chroma_config = config.vector_db
+            return ChromaAdapter(chroma_config)
         elif provider == "qdrant":
             qdrant_config = config
             if hasattr(config, "qdrant"):

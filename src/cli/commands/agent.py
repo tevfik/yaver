@@ -3,51 +3,91 @@ Yaver Agent Commands
 Manage autonomous agents and their learning.
 """
 import typer
-from ..ui import console, print_title, print_success, print_error, create_table
+from pathlib import Path
+from ..ui import (
+    console,
+    print_title,
+    print_success,
+    print_error,
+    print_warning,
+    create_table,
+    print_section_header,
+)
+from config.config import get_config
 
 app = typer.Typer(help="Manage autonomous agent learning")
 
 
 @app.command()
-def status(
-    project_id: str = typer.Argument(..., help="Project ID to check agent status for")
+def work(
+    request: str = typer.Argument(..., help="Task description for the agent"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
+    iterations: int = typer.Option(None, "--iterations", "-i", help="Max iterations"),
 ):
-    """Show agent learning state."""
-    print_title(f"Agent Status: {project_id}")
-    # Placeholder for agent status implementation
-    # In a real implementation, this would query the agent's memory/state
-    console.print("[dim]Checking agent state...[/dim]")
-    print_success("Agent is active and learning.")
+    """Execute a task autonomously."""
+    from tools.code_analyzer.analyzer import CodeAnalyzer
+    from agents.agent_base import YaverState, ConfigWrapper
+    from agents.agent_task_manager import task_manager_node, run_iteration_cycle
 
+    print_section_header("Autonomous Agent Worker", "🤖")
+    console.print(f"\n[bold]Task:[/bold] {request}")
 
-@app.command()
-def history(
-    project_id: str = typer.Argument(..., help="Project ID"),
-    limit: int = typer.Option(10, "--limit", "-l", help="Number of items to show"),
-):
-    """Show agent decision history."""
-    print_title(f"Agent History: {project_id}")
+    repo_path = Path(path).resolve()
+    console.print(f"[dim]Initializing context from {repo_path}...[/dim]")
 
-    table = create_table(["Time", "Action", "Result"], "Recent Decisions")
-    # Mock data
-    table.add_row("10:00", "Analyze File", "Success")
-    table.add_row("10:05", "Refactor Code", "Completed")
-    console.print(table)
+    # 1. Analyze Repo
+    analyzer = CodeAnalyzer(session_id="cli_work", repo_path=repo_path)
+    repo_info_dict = analyzer.analyze_structure()
+    # Wrap in ConfigWrapper for attribute access
+    repo_info = ConfigWrapper(repo_info_dict)
 
+    # 2. Init State
+    state = YaverState(
+        user_request=request,
+        repo_path=str(repo_path),
+        repo_info=repo_info,
+        iteration_count=0,
+        tasks=[],
+        log=[],
+        errors=[],
+    )
 
-@app.command()
-def teach(
-    project_id: str = typer.Argument(..., help="Project ID"),
-    rec_id: str = typer.Argument(..., help="Recommendation ID"),
-    status: str = typer.Option(..., "--status", "-s", help="approve, reject, ignore"),
-    note: str = typer.Option(None, "--note", "-n", help="Optional feedback note"),
-):
-    """Provide feedback to the agent."""
-    print_title("Agent Feedback")
-    console.print(f"Project: {project_id}")
-    console.print(f"Rec ID: {rec_id}")
-    console.print(f"Status: {status}")
-    if note:
-        console.print(f"Note: {note}")
+    # 3. Initial Planning (Decomposition)
+    console.print("\n[bold]🤔 Planning...[/bold]")
+    state = task_manager_node(state)
 
-    print_success("Feedback recorded!")
+    if state.get("errors"):
+        for err in state["errors"]:
+            print_error(err)
+        return
+
+    tasks = state.get("tasks", [])
+    console.print(f"[green]✅ {len(tasks)} tasks created[/green]")
+
+    # 4. Execution Loop
+    console.print("\n[bold]⚙️  Executing...[/bold]")
+    config = get_config()
+    max_iters = iterations or config.task.max_iterations
+
+    should_continue = True
+    while should_continue and state.get("iteration_count", 0) < max_iters:
+        state = run_iteration_cycle(state)
+        should_continue = state.get("should_continue", False)
+
+        # Check for immediate errors in state update
+        if not should_continue and not any(
+            t.status == "completed" for t in state.get("tasks", [])
+        ):
+            if state.get("errors"):
+                for err in state["errors"]:
+                    print_error(err)
+                break
+
+    # 5. Summary
+    completed = [t for t in state.get("tasks", []) if t.status.value == "completed"]
+    total = len(state.get("tasks", []))
+
+    if completed:
+        print_success(f"\n✅ Completed {len(completed)}/{total} tasks.")
+    else:
+        print_warning(f"\n⚠️  Completed {len(completed)}/{total} tasks.")

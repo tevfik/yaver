@@ -1,162 +1,116 @@
-"""
-Graph Database Manager for Yaver AI
-Handles code graph storage and retrieval using Neo4j.
-"""
-
 from typing import Dict, List, Any, Optional
-from neo4j import GraphDatabase
 import logging
-from .config import get_config
+from config.config import get_config
+from tools.adapter_factory import get_graph_adapter
 
-logger = logging.getLogger("yaver_cli")
+logger = logging.getLogger("agents")
 
 
 class GraphManager:
     """
-    Manages interactions with Neo4j graph database.
+    Manages interactions with graph database (Neo4j or NetworkX).
     Stores code structure (Files, Classes, Functions) and their relationships.
     """
 
     def __init__(self):
         config = get_config()
-        self.uri = config.neo4j.uri
-        self.username = config.neo4j.username
-        self.password = config.neo4j.password
-
-        try:
-            self.driver = GraphDatabase.driver(
-                self.uri, auth=(self.username, self.password)
-            )
-            self.verify_connection()
-        except Exception as e:
-            logger.error(f"Failed to initialize Neo4j driver: {e}")
-            self.driver = None
+        self.adapter = get_graph_adapter(config)
 
     def close(self):
-        if self.driver:
-            self.driver.close()
-
-    def verify_connection(self):
-        """Check if Neo4j is reachable"""
-        try:
-            with self.driver.session() as session:
-                result = session.run("RETURN 1 AS num")
-                record = result.single()
-                if record and record["num"] == 1:
-                    logger.info(f"✅ Connected to Neo4j at {self.uri}")
-                else:
-                    logger.warning(f"⚠️ Neo4j connection test failed")
-        except Exception as e:
-            logger.error(f"❌ Neo4j connection error: {e}")
-            self.driver = None
+        if hasattr(self.adapter, "close"):
+            self.adapter.close()
 
     def store_file_node(self, file_path: str, repo_name: str, language: str, loc: int):
         """Create or update a File node"""
-        if not self.driver:
-            return
-
-        query = """
-        MERGE (f:File {path: $path, repo_name: $repo_name})
-        SET f.language = $language,
-            f.loc = $loc,
-            f.last_updated = datetime()
-        """
-        try:
-            with self.driver.session() as session:
-                session.run(
-                    query,
-                    path=file_path,
-                    repo_name=repo_name,
-                    language=language,
-                    loc=loc,
-                )
-        except Exception as e:
-            logger.error(f"Failed to store file node {file_path}: {e}")
+        if self.adapter:
+            self.adapter.store_file_node(file_path, repo_name, language, loc)
 
     def store_code_structure(
         self, file_path: str, repo_name: str, structure: Dict[str, Any]
     ):
         """
         Store classes and functions found in a file and link them.
-        structure expects: {'classes': ['ClassName'], 'functions': ['func_name']}
         """
-        if not self.driver:
-            return
-
-        # Store Classes
-        for class_name in structure.get("classes", []):
-            query = """
-            MATCH (f:File {path: $path, repo_name: $repo_name})
-            MERGE (c:Class {name: $name, file_path: $path, repo_name: $repo_name})
-            MERGE (f)-[:CONTAINS]->(c)
-            """
-            try:
-                with self.driver.session() as session:
-                    session.run(
-                        query, path=file_path, repo_name=repo_name, name=class_name
-                    )
-            except Exception as e:
-                logger.error(f"Failed to store class {class_name}: {e}")
-
-        # Store Functions
-        for func_name in structure.get("functions", []):
-            query = """
-            MATCH (f:File {path: $path, repo_name: $repo_name})
-            MERGE (fn:Function {name: $name, file_path: $path, repo_name: $repo_name})
-            MERGE (f)-[:CONTAINS]->(fn)
-            """
-            try:
-                with self.driver.session() as session:
-                    session.run(
-                        query, path=file_path, repo_name=repo_name, name=func_name
-                    )
-            except Exception as e:
-                logger.error(f"Failed to store function {func_name}: {e}")
-
-        # Store Calls
-        for call in structure.get("calls", []):
-            # We only create the relationship if the caller function is known (already stored)
-            # The callee might not be defined in this file, so we merge it as a Function node
-            # (possibly a stub if we haven't parsed its file yet, but we attach repo_name)
-            query = """
-            MATCH (caller:Function {name: $caller_name, file_path: $path, repo_name: $repo_name})
-            MERGE (callee:Function {name: $callee_name, repo_name: $repo_name})
-            MERGE (caller)-[:CALLS]->(callee)
-            """
-            try:
-                with self.driver.session() as session:
-                    session.run(
-                        query,
-                        caller_name=call["caller"],
-                        callee_name=call["callee"],
-                        path=file_path,
-                        repo_name=repo_name,
-                    )
-            except Exception as e:
-                # Common to fail if caller node doesn't exist (e.g. blacklisted keyword)
-                pass
+        if self.adapter:
+            self.adapter.store_code_structure(file_path, repo_name, structure)
 
     def get_project_summary(self) -> str:
         """
         Retrieve a summary of the project structure from the Graph.
-        Returns a text description suitable for LLM context.
         """
-        if not self.driver:
+        if not self.adapter:
             return "Graph database not available."
 
-        summary = "Project Graph Summary (from Neo4j):\n"
+        return self.adapter.get_project_summary()
 
-        # Count nodes
-        query_stats = """
-        MATCH (n)
-        RETURN labels(n) as label, count(n) as count
+    def get_context_for_file(self, file_path: str, repo_name: str) -> str:
         """
-        try:
-            with self.driver.session() as session:
-                results = session.run(query_stats)
-                for record in results:
-                    summary += f"- {record['label'][0]}s: {record['count']}\n"
-        except Exception as e:
-            logger.error(f"Failed to get graph stats: {e}")
+        Retrieve graph context for a file (imports, callers, callees)
+        """
+        if not self.adapter:
+            return ""
 
-        return summary
+        # Check if adapter supports this method
+        if hasattr(self.adapter, "get_context_for_file"):
+            return self.adapter.get_context_for_file(file_path, repo_name)
+
+        return ""
+
+    def find_nodes_by_name(self, name: str) -> List[Dict[str, Any]]:
+        """Find nodes by name."""
+        if self.adapter and hasattr(self.adapter, "find_nodes_by_name"):
+            return self.adapter.find_nodes_by_name(name)
+        return []
+
+    def find_relationships(
+        self, from_node: str = None, to_node: str = None, rel_type: str = None
+    ) -> List[Dict[str, Any]]:
+        """Find relationships."""
+        if self.adapter and hasattr(self.adapter, "find_relationships"):
+            return self.adapter.find_relationships(from_node, to_node, rel_type)
+        return []
+
+    def store_build_target(
+        self,
+        name: str,
+        build_type: str,
+        cmd: str,
+        dependent_files: List[str],
+        repo_name: str,
+    ):
+        """
+        Store a Build Target and its dependencies.
+        Example: 'test' (make), depends on [main.py, test_main.py]
+        """
+        if not self.adapter:
+            return
+
+        target_id = f"{repo_name}:build:{name}"
+
+        # Add BuildTarget node
+        if hasattr(self.adapter, "add_node"):
+            self.adapter.add_node(
+                target_id,
+                labels=["BuildTarget"],
+                name=name,
+                build_type=build_type,
+                command=cmd,
+                repo_name=repo_name,
+            )
+
+            # Link to files
+            for file_path in dependent_files:
+                file_id = f"{repo_name}:{file_path}"
+                # Target depends on file (File -> Used By -> Target or Target -> Depends -> File)
+                # Let's do Target -> DEPENDS_ON -> File
+                # But check if file node exists first? NetworkX adapter creates edge lazily usually?
+                # NetworkX adds nodes if they don't exist in add_edge.
+                # But we want to ensure File node has labels.
+
+                # Assuming File nodes exist from store_file_node calling previously.
+                if hasattr(self.adapter, "add_relationship"):
+                    self.adapter.add_relationship(target_id, file_id, "DEPENDS_ON")
+
+            # Save
+            if hasattr(self.adapter, "save"):
+                self.adapter.save()

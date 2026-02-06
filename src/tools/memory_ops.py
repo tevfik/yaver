@@ -7,9 +7,10 @@ import logging
 from typing import List, Dict, Any
 from pathlib import Path
 
-from agent_base import FileAnalysis, logger
-from agent_memory import MemoryManager, MemoryType
-from agent_graph import GraphManager
+from agents.agent_base import FileAnalysis, logger
+from agents.agent_memory import MemoryManager, MemoryType
+from agents.agent_graph import GraphManager
+from tools.analysis.build_analyzer import BuildAnalyzer
 
 
 def ingest_repository(
@@ -64,6 +65,32 @@ def ingest_repository(
             stats["errors"].append(msg)
     else:
         stats["errors"].append("Neo4j driver not available")
+
+    # 2.5 Build System Ingestion (Graph)
+    logger.info("Ingesting Build Analysis...")
+    try:
+        build_analyzer = BuildAnalyzer(repo_path)
+        for file in file_analyses:
+            ctx = build_analyzer.get_build_context_for_file(file.file_path)
+            for cmd in ctx.get("commands", []):
+                # We treat the command itself as the target name for uniqueness
+                # e.g. "make test" -> target="test"
+                target_name = (
+                    cmd.split(" ")[1] if "make" in cmd and len(cmd.split()) > 1 else cmd
+                )
+
+                graph_mgr.store_build_target(
+                    name=target_name,
+                    build_type=ctx.get("build_type", "unknown"),
+                    cmd=cmd,
+                    dependent_files=[file.file_path],
+                    repo_name=repo_name,
+                )
+        stats["neo4j"] += 1  # Count generic build update
+    except Exception as e:
+        msg = f"Build Analysis ingestion error: {e}"
+        logger.error(msg)
+        stats["errors"].append(msg)
 
     # 3. Vector Ingestion (Semantics)
     logger.info("Starting Vector Ingestion (Qdrant)...")

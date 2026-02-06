@@ -4,11 +4,13 @@ from pathlib import Path
 from typing import Dict, Optional, Any
 from pydantic import BaseModel
 
+
 class ForgeHostConfig(BaseModel):
     provider: str
     token: str
     api_url: Optional[str] = None
     default_owner: Optional[str] = None
+
 
 class CredentialManager:
     """
@@ -32,7 +34,7 @@ class CredentialManager:
             with open(self.hosts_file, "r") as f:
                 data = json.load(f)
                 return {
-                    host: ForgeHostConfig(**cfg) 
+                    host: ForgeHostConfig(**cfg)
                     for host, cfg in data.get("hosts", {}).items()
                 }
         except Exception as e:
@@ -51,7 +53,7 @@ class CredentialManager:
     def _save_to_disk(self):
         data = {
             "hosts": {
-                host: cfg.model_dump(exclude_none=True) 
+                host: cfg.model_dump(exclude_none=True)
                 for host, cfg in self.hosts.items()
             }
         }
@@ -70,14 +72,23 @@ class CredentialManager:
             part = remote_url.split("@")[1]
             domain = part.split(":")[0]
         elif "://" in remote_url:
-            # HTTP: https://domain/user/repo
+            # HTTP: https://domain/user/repo OR https://user:pass@domain/user/repo
             part = remote_url.split("://")[1]
-            domain = part.split("/")[0]
+            domain_with_auth = part.split("/")[0]
+            if "@" in domain_with_auth:
+                domain = domain_with_auth.split("@")[1]
+            else:
+                domain = domain_with_auth
         else:
             return None
-        
+
         # Check against known hosts
         if domain in self.hosts:
             return domain
-        
+
+        # Try to find a partial match (e.g. github.com)
+        for host in self.hosts:
+            if host in domain or domain in host:
+                return host
+
         return None

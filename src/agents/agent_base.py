@@ -1,5 +1,6 @@
 """
 Agent Base Module - Core state and utilities for Yaver AI
+
 Inspired by IntelligentAgent and CodingAgent architectures
 """
 
@@ -15,7 +16,7 @@ from langchain_ollama import ChatOllama
 from rich.console import Console
 from rich.logging import RichHandler
 
-from config.onboarding import get_config as get_config_dict
+from config.config import get_config as get_yaver_config
 
 
 class ConfigWrapper:
@@ -33,25 +34,8 @@ class ConfigWrapper:
 
 
 def get_config():
-    """Get config wrapped for attribute access"""
-    try:
-        config_dict = get_config_dict()
-        if isinstance(config_dict, dict):
-            return ConfigWrapper(config_dict)
-        return config_dict
-    except Exception as e:
-        # Fallback: return minimal config
-        minimal = ConfigWrapper(
-            {
-                "logging": {"log_level": "INFO", "log_file": "/tmp/yaver.log"},
-                "ollama": {
-                    "model_general": "mistral",
-                    "model_code": "mistral",
-                    "base_url": "http://localhost:11434",
-                },
-            }
-        )
-        return minimal
+    """Get the central Yaver configuration"""
+    return get_yaver_config()
 
 
 # ============================================================================
@@ -246,6 +230,12 @@ class Task(BaseModel):
     repo_path: Optional[str] = None  # Repository path for this task
     branch_name: Optional[str] = None  # Git branch name
     comments: List[Dict] = Field(default_factory=list)
+    originating_comment_id: Optional[
+        int
+    ] = None  # ID of the PR/Issue comment that triggered this task
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict
+    )  # Flexible metadata for special tasks
 
 
 class RepositoryInfo(BaseModel):
@@ -314,7 +304,7 @@ except ImportError:
 # ============================================================================
 def create_llm(model_type: str = "general", **kwargs) -> ChatOllama:
     """Create LLM instance based on type with optional authentication"""
-    config = get_config_dict()
+    config = get_config()
 
     # Handle both flat and nested config formats
     if isinstance(config, dict):
@@ -336,6 +326,7 @@ def create_llm(model_type: str = "general", **kwargs) -> ChatOllama:
     else:
         # Nested format (from config.py)
         model_general = config.ollama.model_general
+        model_reasoning = config.ollama.model_reasoning
         model_code = config.ollama.model_code
         model_extraction = config.ollama.model_extraction
         base_url = config.ollama.base_url
@@ -344,6 +335,7 @@ def create_llm(model_type: str = "general", **kwargs) -> ChatOllama:
 
     model_map = {
         "general": model_general,
+        "reasoning": model_reasoning,
         "code": model_code,
         "extraction": model_extraction,
     }
@@ -459,45 +451,60 @@ def format_log_entry(agent_name: str, message: str) -> str:
 
 def retrieve_relevant_context(query: str, limit: int = 5) -> str:
     """
-    Retrieve relevant context from the Memory Manager.
-    Fetches both Code Elements and past Interactions.
-    Filters by current active session if available.
+    Retrieves relevant context (code snippets, memory) for a user query.
+    Uses MemoryQueryOrchestrator for Hybrid RAG (Vector + Graph).
     """
     try:
-        from .agent_memory import get_memory_manager
+        from core.query_orchestrator import MemoryQueryOrchestrator
         from core.session_manager import get_session_manager
 
-        memory = get_memory_manager()
+        # Using Orchestrator instead of raw MemoryManager
+        orchestrator = MemoryQueryOrchestrator()
+        result = orchestrator.execute_query(query)
+
         session_mgr = get_session_manager()
         active_session = session_mgr.get_active_session()
 
-        # 1. Search for related code
-        code_results = memory.get_related_code(query, limit=3)
-
-        # 2. Filter by active session if available
-        if active_session and code_results:
-            code_results = [
-                item
-                for item in code_results
-                if item.get("metadata", {}).get("session_id") == active_session
-            ]
-
-        # 3. Search for generic/task memories (optional, can be expanded)
-        # generic_results = memory.search_memories(query, limit=2)
-
-        if not code_results:
+        if not result.sources and not result.fused_results:
             return ""
 
-        session_info = f" [Session: {active_session}]" if active_session else ""
-        context_str = f"\n\n=== 🧠 RECALLED MEMORY{session_info} ===\n"
-        for item in code_results:
-            context_str += f"- Found relevant code in {item['metadata'].get('file_path', 'unknown')}:\n"
-            content_preview = (
-                item["content"][:500] + "..."
-                if len(item["content"]) > 500
-                else item["content"]
-            )
-            context_str += f"  {content_preview}\n\n"
+        context_str = f"\n\n=== 🧠 RECALLED MEMORY [Confidence: {result.overall_confidence:.2f}] ===\n"
+
+        # 1. Add Semantic Results (Code Snippets)
+        semantic_sources = [
+            s for s in result.sources if s.query_type.value == "semantic"
+        ]
+        if semantic_sources:
+            context_str += "\n--- 🔍 Related Code (Vector Search) ---\n"
+            for source in semantic_sources:
+                for item in source.results:
+                    file_path = item.get("file", "unknown")
+                    snippet = item.get("snippet", "")
+                    context_str += f"- {file_path}:\n  {snippet[:300]}...\n"
+
+        # 2. Add Structural Results (Graph)
+        structural_sources = [
+            s for s in result.sources if s.query_type.value == "structural"
+        ]
+        if structural_sources:
+            context_str += "\n--- 🕸️ Structural Context (Graph) ---\n"
+            for source in structural_sources:
+                if not source.results:
+                    continue
+                data = source.results[0]
+                nodes = data.get("nodes", [])
+                rels = data.get("relationships", [])
+
+                found_names = ", ".join([n.get("name", "unknown") for n in nodes])
+                if found_names:
+                    context_str += f"Entities: {found_names}\n"
+
+                for rel in rels:
+                    r_type = rel.get("type", "related")
+                    # Try to parse our specific relationship format
+                    source_id = rel.get("source", "unknown")
+                    target_id = rel.get("details", {}).get("to", "unknown")
+                    context_str += f"- {r_type}: {source_id} -> {target_id}\n"
 
         return context_str
 

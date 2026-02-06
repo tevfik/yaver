@@ -155,6 +155,17 @@ class NetworkXAdapter:
         else:
             raise ValueError(f"Invalid direction: {direction}")
 
+    def find_nodes_by_name(self, name: str) -> List[Dict[str, Any]]:
+        """
+        Find nodes by 'name' property (exact match).
+        Useful for resolving function names to node IDs.
+        """
+        results = []
+        for node_id, data in self.graph.nodes(data=True):
+            if data.get("name") == name:
+                results.append({"id": node_id, **data})
+        return results
+
     def get_stats(self) -> Dict[str, int]:
         """Get graph statistics"""
         return {
@@ -199,6 +210,167 @@ class NetworkXAdapter:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+    # --- Agent Graph Compatible Interface ---
+
+    def store_file_node(self, file_path: str, repo_name: str, language: str, loc: int):
+        """
+        Store a file node (AgentGraph Interface)
+        """
+        node_id = f"{repo_name}:{file_path}"
+        self.add_node(
+            node_id,
+            labels=["File"],
+            path=file_path,
+            repo_name=repo_name,
+            language=language,
+            loc=loc,
+        )
+        self.save()
+
+    def store_code_structure(
+        self, file_path: str, repo_name: str, structure: Dict[str, Any]
+    ):
+        """
+        Store classes, functions, and their relationships (AgentGraph Interface)
+        Also stores calls if provided in structure.
+        """
+        file_id = f"{repo_name}:{file_path}"
+        # print(f"DEBUG: store_code_structure for {file_id}. Struct keys: {structure.keys()}")
+
+        if not self.graph.has_node(file_id):
+            # Should have been created by store_file_node, but ensure safe
+            self.store_file_node(file_path, repo_name, "unknown", 0)
+
+        # 1. Classes
+        for class_name in structure.get("classes", []):
+            class_id = f"{file_id}::{class_name}"
+            self.add_node(
+                class_id,
+                labels=["Class"],
+                name=class_name,
+                file_path=file_path,
+                repo_name=repo_name,
+            )
+            self.add_relationship(file_id, class_id, "CONTAINS")
+
+        # 2. Functions
+        for func_name in structure.get("functions", []):
+            func_id = f"{file_id}::{func_name}"
+            self.add_node(
+                func_id,
+                labels=["Function"],
+                name=func_name,
+                file_path=file_path,
+                repo_name=repo_name,
+            )
+            self.add_relationship(file_id, func_id, "CONTAINS")
+
+        # 3. Imports (Node-to-File linking is hard without resolving paths, storing as property for now)
+        imports = structure.get("imports", [])
+        if imports:
+            # We can create "Import" nodes or just edges if we can resolve them.
+            # For now, let's store them as property on the file node
+            if file_id in self.graph.nodes:
+                self.graph.nodes[file_id]["imports"] = imports
+            else:
+                logger.warning(f"File node {file_id} not found when storing imports")
+
+            # Try to link if import looks like a file in our graph
+            # This is naive but works for some cases
+            for imp in imports:
+                # Naive resolution attempt: check if any file node ends with this import
+                # This is O(N) but graph size is usually manageable in memory for NetworkX
+                # For optimized resolution, we need a separate index
+                pass
+
+        # 4. Calls
+        calls = structure.get("calls", [])
+        for call in calls:
+            caller = call.get("caller")
+            callee = call.get("callee")
+
+            if caller and callee:
+                # Construct IDs (Assuming top-level functions for simplicity)
+                # In robust implementation, we need scope handling
+                caller_id = f"{file_id}::{caller}"
+
+                # Check if caller exists
+                if self.graph.has_node(caller_id):
+                    # We can't easily resolve callee to a specific node ID without global symbol table.
+                    # But we can store an "Unresolved Call" edge or property.
+                    # Or try to find if callee exists in current file
+                    callee_id_local = f"{file_id}::{callee}"
+                    if self.graph.has_node(callee_id_local):
+                        self.add_relationship(caller_id, callee_id_local, "CALLS")
+                    else:
+                        # Store external call attempt
+                        if "external_calls" not in self.graph.nodes[caller_id]:
+                            self.graph.nodes[caller_id]["external_calls"] = []
+                        self.graph.nodes[caller_id]["external_calls"].append(callee)
+
+        self.save()
+
+    def get_project_summary(self) -> str:
+        """
+        Get project stats for Agent
+        """
+        stats = self.get_stats()
+        summary = f"Project Graph Summary (NetworkX):\n"
+        summary += f"- Total Nodes: {stats['nodes']}\n"
+        summary += f"- Total Edges: {stats['edges']}\n"
+
+        # Count by label
+        counts = {}
+        for _, data in self.graph.nodes(data=True):
+            for label in data.get("labels", []):
+                counts[label] = counts.get(label, 0) + 1
+
+        for label, count in counts.items():
+            summary += f"- {label}s: {count}\n"
+
+        return summary
+
+    def get_context_for_file(self, file_path: str, repo_name: str) -> str:
+        """
+        Get connected nodes for a file to provide context for LLM.
+        """
+        file_id = f"{repo_name}:{file_path}"
+        if not self.graph.has_node(file_id):
+            return f"No graph data for {file_path}"
+
+        context = []
+
+        # 1. Imports (Property or Edge)
+        file_data = self.graph.nodes[file_id]
+        imports = file_data.get("imports", [])
+        if imports:
+            context.append(f"Imports: {', '.join(imports)}")
+
+        # 2. Classes/Functions defined in file
+        contains = self.get_neighbors(file_id, direction="out")
+        defined = []
+        for child_id in contains:
+            data = self.graph.nodes[child_id]
+            if "Class" in data.get("labels", []) or "Function" in data.get(
+                "labels", []
+            ):
+                defined.append(data.get("name", "unknown"))
+
+                # 3. Calls made by these functions
+                calls = self.get_neighbors(child_id, direction="out")
+                for call_target in calls:
+                    call_data = self.graph.nodes[call_target]
+                    edge_data = self.graph.get_edge_data(child_id, call_target)
+                    if edge_data and edge_data.get("type") == "CALLS":
+                        context.append(
+                            f"Function '{data.get('name')}' calls '{call_data.get('name')}'"
+                        )
+
+        if defined:
+            context.append(f"Defines: {', '.join(defined)}")
+
+        return "\n".join(context)
 
     # Neo4j-compatible interface methods
     def store_analysis(

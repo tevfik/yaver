@@ -12,9 +12,10 @@ import json
 from rich.console import Console
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
+from cli.ui import format_panel
 from tools.code_analyzer.analyzer import CodeAnalyzer
-from tools.rag.rag_service import RAGService
-from agents.agent_base import create_llm
+from agents.agent_base import create_llm, retrieve_relevant_context
+from tools.sandbox import Sandbox
 from utils.prompts import CLI_CHAT_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,8 @@ class ChatAgent:
         self.project_id = project_id  # Project ID for filtering repos in RAG
         self.repo_path = Path(repo_path)
         self.analyzer: Optional[CodeAnalyzer] = None
-        self.rag_service: Optional[RAGService] = None
+        # Initialize Sandbox with the repo path as CWD to allow file system operations on the codebase
+        self.sandbox = Sandbox(timeout=30, cwd=str(self.repo_path.resolve()))
 
         # Initialize history with System Prompt
         self.history = [SystemMessage(content=CLI_CHAT_SYSTEM_PROMPT)]
@@ -53,27 +55,11 @@ class ChatAgent:
             self.analyzer = CodeAnalyzer(analyzer_id, self.repo_path)
 
             # Connect to Neo4j (using default local config for now)
-            # In a real scenario, we might prompt for these or read from .env if not set
-            # For now, let's assume default localhost:7687
             try:
                 self.analyzer.connect_db("bolt://localhost:7687", ("neo4j", "password"))
             except Exception as e:
                 self.console.print(
                     f"[yellow]Warning: Graph database not connected (Neo4j): {e}[/yellow]"
-                )
-
-            # Initialize RAG
-            self.console.print("[dim]Initializing Semantic Engine...[/dim]")
-            try:
-                self.analyzer.init_rag()
-                self.rag_service = self.analyzer.rag_service
-                self.console.print("[green]Ready![/green]")
-            except Exception as rag_err:
-                self.console.print(
-                    f"[yellow]Warning: RAG service initialization failed: {rag_err}[/yellow]"
-                )
-                self.console.print(
-                    "[dim]Continuing without semantic search capabilities[/dim]"
                 )
 
             # Initialize basic LLM for conversational parts
@@ -137,37 +123,127 @@ class ChatAgent:
     def chat(self, user_input: str) -> str:
         """
         Process a user message and return the response.
-        Decides whether to use RAG or simple Chat.
+        Uses Hybrid RAG via MemoryQueryOrchestrator.
         """
         self.history.append(HumanMessage(content=user_input))
 
         response_text = ""
 
-        if self.rag_service:
-            try:
-                # Load quality context
-                quality_ctx = self._load_quality_context()
+        try:
+            # 1. Retrieve Context
+            context = retrieve_relevant_context(user_input)
+            quality_ctx = self._load_quality_context()
 
-                # Pass history so RAG can perform query rewriting
-                response_text = self.rag_service.answer(
-                    user_input,
-                    session_id=self.project_id,
-                    chat_history=self.history[:-1],  # Exclude current message
-                    extra_context=quality_ctx,
-                )
-            except Exception as e:
-                self.console.print(f"[yellow]RAG Error: {e}[/yellow]")
-                response_text = (
-                    f"I encountered an error accessing the codebase knowledge: {e}"
-                )
-        else:
-            # Fallback to simple LLM
-            try:
-                resp = self._llm.invoke(user_input)
-                response_text = resp.content if hasattr(resp, "content") else str(resp)
-            except Exception as e:
-                response_text = f"Error: {e}"
+            full_context = f"{context}\n\n{quality_ctx}"
 
+            # 2. Invoke LLM with Context
+            # Construct message history with injected context
+            messages_to_send = list(self.history[:-1])  # All past messages
+
+            # Inject Context as a temporary System Message before the latest user input
+            context_msg = SystemMessage(
+                content=f"Context from Codebase:\n{full_context}"
+            )
+            messages_to_send.append(context_msg)
+
+            # Append the latest user message
+            messages_to_send.append(self.history[-1])
+
+            # Debug: Log the message structure sizes
+            # logger.debug(f"Sending {len(messages_to_send)} messages to LLM")
+
+            resp = self._llm.invoke(messages_to_send)
+            response_text = resp.content if hasattr(resp, "content") else str(resp)
+
+            # Logic to extract code from either Tool Calls or Markdown Blocks
+            code_to_run = None
+
+            # 1. Check for structured tool calls (LangChain/Ollama parsing)
+            if hasattr(resp, "tool_calls") and resp.tool_calls:
+                for tool in resp.tool_calls:
+                    # Match name loosely
+                    if (
+                        "python" in tool.get("name", "").lower()
+                        and "exec" in tool.get("name", "").lower()
+                    ):
+                        args = tool.get("args", {})
+                        code_to_run = (
+                            args.get("command")
+                            or args.get("code")
+                            or args.get("script")
+                        )
+                        if code_to_run:
+                            self.console.print(
+                                f"[dim]Tool Call Detected: {tool['name']}[/dim]"
+                            )
+                            break
+
+            # 2. Check for Markdown blocks if no tool call found
+            if not code_to_run and (
+                "```python:execute" in response_text
+                or "```python:exec" in response_text
+            ):
+                import re
+
+                code_match = re.search(
+                    r"```python:(?:execute|exec)\n(.*?)```", response_text, re.DOTALL
+                )
+                if code_match:
+                    code_to_run = code_match.group(1)
+
+            # Execution Logic
+            if code_to_run:
+                self.console.print(
+                    "[dim]⚡ Detected executable code block. Running in Sandbox...[/dim]"
+                )
+                success, output = self.sandbox.execute_code(code_to_run)
+
+                self.console.print(
+                    format_panel(output, title="Sandbox Output", border_style="yellow")
+                )
+
+                # Feed result back to LLM for final interpretation
+                follow_up_messages = list(messages_to_send)
+                # Ensure we have a valid previous message content
+                prev_content = (
+                    response_text
+                    if response_text
+                    else "Exec: Code generated via tool call."
+                )
+                follow_up_messages.append(AIMessage(content=prev_content))
+                follow_up_messages.append(
+                    SystemMessage(content=f"Execution Result:\n{output}")
+                )
+                follow_up_messages.append(
+                    HumanMessage(content="Interpret this result.")
+                )
+
+                final_resp = self._llm.invoke(follow_up_messages)
+                interpretation = (
+                    final_resp.content
+                    if hasattr(final_resp, "content")
+                    else str(final_resp)
+                )
+
+                if not response_text:
+                    response_text = f"I've calculated this using the following code:\n```python\n{code_to_run}\n```\n\n**Analysis:**\n{interpretation}"
+                else:
+                    response_text += "\n\n**Execution Result:**\n" + interpretation
+
+            # Fallback for empty responses if NO code was executed
+            elif not response_text or not response_text.strip():
+                response_text = "I apologize, but I couldn't generate a response. Please try asking again or check the system logs."
+                self.console.print(
+                    f"[yellow]Warning: LLM returned empty response. Raw: {resp}[/yellow]"
+                )
+
+        except Exception as e:
+            self.console.print(f"[yellow]Error: {e}[/yellow]")
+            response_text = (
+                f"I encountered an error accessing the codebase knowledge: {e}"
+            )
+
+        self.history.append(AIMessage(content=response_text))
         return response_text
 
     def close(self):

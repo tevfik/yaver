@@ -2,6 +2,23 @@
 
 Complete reference for all Yaver commands (v1.2.0).
 
+## 🚀 Quick Start Workflow
+
+1.  **Ingest Codebase** (Learn):
+    ```bash
+    yaver code analyze . --type deep --project-id my-cool-app
+    ```
+2.  **Start Chatting** (Context-Aware):
+    ```bash
+    yaver chat --project-id my-cool-app
+    ```
+3.  **Solve a Task** (Agentic Mode):
+    ```bash
+    yaver solve file "Refactor this class to use Singleton pattern" src/utils/logger.py
+    ```
+
+---
+
 ## Core Commands
 
 ### `yaver chat`
@@ -21,21 +38,41 @@ yaver chat --session-id=debug-session   # Continue previous conversation
 
 ---
 
-## Code Analysis
+## Agentic Solver (New)
 
-### `yaver code analyze`
-Analyze repository structure and code.
+### `yaver solve file`
+Autonomous Plan -> Code -> Review loop for specific files.
 
 ```bash
-yaver code analyze .                    # Quick overview
-yaver code analyze . --type deep        # Full analysis (AST + Graph + Embeddings)
-yaver code analyze . --type deep --project-id=myapp  # Store in project
+yaver solve file <task_description> <file_path> [options]
+```
+
+**Examples:**
+```bash
+yaver solve file "Add error handling to network calls" src/api/client.py
+yaver solve file "Fix syntax error in line 42" tests/test_api.py --iterations 5
+```
+
+**Workflow:**
+1.  **Plan**: Agent analyzes the file and available tools to create a step-by-step plan.
+2.  **Code**: Coder agent executes the plan.
+3.  **Review**: Reviewer agent audits the changes. If rejected, it loops back to fix it.
+
+---
+
+## Code Analysis & Learning
+
+### `yaver code analyze`
+Deep learn repository structure and code to build the Knowledge Graph.
+
+```bash
+yaver code analyze . --type deep --project-id=myapp  # Store in project context
 yaver code analyze . --incremental      # Only analyze changed files
 ```
 
 **Analysis Types:**
 - `overview` - Basic stats (default)
-- `deep` - Full analysis with AST, Graph, and Embeddings
+- `deep` - Full analysis with AST, Graph, and Embeddings (Required for RAG)
 
 ---
 
@@ -48,6 +85,17 @@ yaver code query "database connection" --limit 10
 ```
 
 ---
+
+## Social & Verification
+
+### `yaver verify`
+System health and agent capability testing.
+
+```bash
+yaver verify social-live      # Test social agent against live repo
+yaver verify social-clean     # Test in clean sandbox
+```
+
 
 ## System Management
 

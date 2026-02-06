@@ -17,7 +17,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
-logger = logging.getLogger("yaver_cli.internal_state")
+logger = logging.getLogger("agents.internal_state")
 
 
 @dataclass
@@ -129,7 +129,7 @@ class InternalStateManager:
 
         # Auto-detect from git if needed
         if not git_remote_url or not git_branch or not git_commit_hash:
-            from yaver_cli.repo_manager import RepositoryManager
+            from agents.repo_manager import RepositoryManager
 
             try:
                 repo_mgr = RepositoryManager(repo_path)

@@ -6,11 +6,11 @@ from rich.prompt import Confirm
 from rich.markdown import Markdown
 from pathlib import Path
 
-from yaver_cli.agent_coder import CoderAgent
-from yaver_cli.agent_planner import PlannerAgent
-from yaver_cli.agent_reviewer import ReviewerAgent
-from yaver_cli.git_ops import GitOps
-from yaver_cli.cli_edit import extract_code_block
+from agents.agent_coder import CoderAgent
+from agents.agent_planner import PlannerAgent
+from agents.agent_reviewer import ReviewerAgent
+from agents.git_ops import GitOps
+from agents.cli_edit import extract_code_block
 
 console = Console()
 

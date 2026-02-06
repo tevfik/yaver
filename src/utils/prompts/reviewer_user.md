@@ -1,6 +1,9 @@
 Requirements:
 {requirements}
 
+Project Context (Dependencies/Definitions):
+{context}
+
 Code to Review:
 {code}
 

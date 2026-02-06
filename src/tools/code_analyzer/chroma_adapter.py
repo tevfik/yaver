@@ -44,10 +44,13 @@ class ChromaAdapter(VectorStoreInterface):
         """Establish connection to ChromaDB."""
         try:
             # Ensure directory exists
-            Path(self.persist_directory).expanduser().resolve().mkdir(parents=True, exist_ok=True)
+            Path(self.persist_directory).expanduser().resolve().mkdir(
+                parents=True, exist_ok=True
+            )
 
             self.client = chromadb.PersistentClient(
-                path=str(Path(self.persist_directory).expanduser().resolve()), settings=Settings(allow_reset=True)
+                path=str(Path(self.persist_directory).expanduser().resolve()),
+                settings=Settings(allow_reset=True),
             )
 
             self.collection = self.client.get_or_create_collection(
@@ -197,3 +200,46 @@ class ChromaAdapter(VectorStoreInterface):
             logger.info(f"Deleted items with {filter_key}={filter_value}")
         except Exception as e:
             logger.error(f"Failed to delete from ChromaDB: {e}")
+
+    def get_recent(
+        self, limit: int = 5, filter: Optional[Dict] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get recently stored items from ChromaDB.
+
+        Args:
+            limit: Max items to return
+            filter: Optional filter dictionary
+
+        Returns:
+            List of items with payload and id
+        """
+        if not self.collection:
+            raise RuntimeError("ChromaDB collection not initialized")
+
+        try:
+            # Chroma get() allows retrieving by filter without vector search
+            results = self.collection.get(
+                limit=limit,
+                where=filter if filter else None,
+                include=["metadatas", "documents"],
+            )
+
+            output = []
+            if not results["ids"]:
+                return []
+
+            for i in range(len(results["ids"])):
+                output.append(
+                    {
+                        "id": results["ids"][i],
+                        "payload": results["metadatas"][i]
+                        if results["metadatas"]
+                        else {},
+                    }
+                )
+            return output
+
+        except Exception as e:
+            logger.error(f"Failed to get recent items from ChromaDB: {e}")
+            return []

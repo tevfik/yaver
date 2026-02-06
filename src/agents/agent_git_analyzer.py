@@ -19,8 +19,9 @@ from bandit.core import manager as bandit_manager
 from bandit.core import config as bandit_config
 
 # Import local Parser for AST extraction
-from tools.git_analysis import GraphIndexer, CodeParser
-from tools.metrics import MetricsManager
+from tools.analysis.graph import GraphIndexer
+from tools.analysis.parser import CodeParser
+from tools.metrics.complexity import MetricsManager
 
 from agents.agent_base import (
     YaverState,

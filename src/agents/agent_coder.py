@@ -22,7 +22,7 @@ from utils.prompts import (
     CODER_EDIT_TEMPLATE,
 )
 
-logger = logging.getLogger("yaver_cli")
+logger = logging.getLogger("agents")
 
 
 class CoderAgent:
